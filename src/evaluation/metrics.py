@@ -15,7 +15,9 @@ def steins_loss(Omega_hat, Omega_true):
     -------
     float
     """
-    raise NotImplementedError
+    p = Omega_hat.shape[0]
+    M = np.linalg.solve(Omega_hat, Omega_true)
+    return np.trace(M) - np.linalg.slogdet(M)[1] - p
 
 
 def frobenius_loss(Omega_hat, Omega_true):
@@ -30,7 +32,8 @@ def frobenius_loss(Omega_hat, Omega_true):
     -------
     float
     """
-    raise NotImplementedError
+    diff = Omega_hat - Omega_true
+    return float(np.sum(diff ** 2))
 
 
 def spectral_loss(Omega_hat, Omega_true):
@@ -45,11 +48,14 @@ def spectral_loss(Omega_hat, Omega_true):
     -------
     float
     """
-    raise NotImplementedError
+    diff = Omega_hat - Omega_true
+    return float(np.linalg.norm(diff, ord=2))
 
 
 def sparsity_metrics(Omega_hat, Omega_true, threshold=1e-5):
     """Sparsity recovery metrics: TPR, FPR, MCC, F1.
+
+    Evaluates off-diagonal elements only (diagonal is always nonzero).
 
     Parameters
     ----------
@@ -65,4 +71,31 @@ def sparsity_metrics(Omega_hat, Omega_true, threshold=1e-5):
     dict
         Keys: "tpr", "fpr", "mcc", "f1", "precision", "recall".
     """
-    raise NotImplementedError
+    p = Omega_hat.shape[0]
+    idx = np.triu_indices(p, k=1)
+
+    true_nonzero = np.abs(Omega_true[idx]) > threshold
+    pred_nonzero = np.abs(Omega_hat[idx]) > threshold
+
+    tp = np.sum(true_nonzero & pred_nonzero)
+    fp = np.sum(~true_nonzero & pred_nonzero)
+    fn = np.sum(true_nonzero & ~pred_nonzero)
+    tn = np.sum(~true_nonzero & ~pred_nonzero)
+
+    tpr = tp / max(tp + fn, 1)
+    fpr = fp / max(fp + tn, 1)
+    precision = tp / max(tp + fp, 1)
+    recall = tpr
+    f1 = 2 * precision * recall / max(precision + recall, 1e-12)
+
+    denom = np.sqrt(float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)))
+    mcc = (tp * tn - fp * fn) / max(denom, 1e-12)
+
+    return {
+        "tpr": float(tpr),
+        "fpr": float(fpr),
+        "mcc": float(mcc),
+        "f1": float(f1),
+        "precision": float(precision),
+        "recall": float(recall),
+    }
