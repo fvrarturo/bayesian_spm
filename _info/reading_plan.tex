@@ -1,0 +1,266 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{tcolorbox}
+\usepackage{longtable}
+
+\hypersetup{colorlinks=true,linkcolor=blue!70!black,citecolor=green!50!black,urlcolor=blue!60!black}
+
+% Priority colors
+\definecolor{P1}{HTML}{C0392B}
+\definecolor{P2}{HTML}{E67E22}
+\definecolor{P3}{HTML}{2980B9}
+\definecolor{P4}{HTML}{7F8C8D}
+
+\newtcolorbox{legend}{colback=gray!5,colframe=gray!50,title=Priority Legend}
+
+\title{\textbf{Reading Plan: Sparse Bayesian Precision Matrix Estimation}\\[0.3em]
+\large 6.7830 Final Project --- Literature Review Foundation}
+\author{Nick Bernardini \and Federico V.\ Cortesi \and Arturo Favara}
+\date{Spring 2026}
+
+\begin{document}
+\maketitle
+
+\begin{legend}
+\begin{tabular}{@{}cl@{}}
+\textcolor{P1}{\textbf{P1 --- Critical}} & Must read thoroughly before coding begins. Core models and algorithms. \\
+\textcolor{P2}{\textbf{P2 --- Important}} & Read before writing the progress report. Key context and evaluation. \\
+\textcolor{P3}{\textbf{P3 --- Recommended}} & Read before writing the final report. Deepens analysis and discussion. \\
+\textcolor{P4}{\textbf{P4 --- Optional}} & Extensions and related work. Skim abstracts; read if pursuing extensions. \\
+\end{tabular}
+\end{legend}
+
+\bigskip
+
+The readings are organized thematically. Within each theme, they are ordered by priority. We recommend completing all P1 readings in Week~1, P2 readings by Week~2, and P3 readings by Week~3.
+
+%======================================================================
+\section{Core Model: The Graphical Horseshoe}
+%======================================================================
+
+\begin{longtable}{@{}p{0.04\textwidth}p{0.88\textwidth}@{}}
+\toprule
+\textbf{Pri.} & \textbf{Reference and Notes} \\
+\midrule
+\endhead
+
+\textcolor{P1}{\textbf{P1}} &
+\textbf{Li, Y., Craig, B.~A., and Bhadra, A. (2019).} The graphical horseshoe estimator for inverse covariance matrices. \textit{Bayesian Analysis}, 14(3):735--757. \\
+& \textit{Why:} This is the paper we are implementing. Read every section. Pay special attention to the Gibbs sampler derivation (Section~3), the column-wise decomposition, and the simulation results (Section~5). Note the KL divergence comparisons against the graphical lasso. \\[0.8em]
+
+\textcolor{P1}{\textbf{P1}} &
+\textbf{Carvalho, C.~M., Polson, N.~G., and Scott, J.~G. (2010).} The horseshoe estimator for sparse signals. \textit{Biometrika}, 97(2):465--480. \\
+& \textit{Why:} Foundation of the horseshoe prior. Focus on Section~2 (properties of the marginal prior), the shrinkage coefficient $\kappa_j$, and the comparison to lasso/ridge in Section~4. This is essential to understand \textit{why} mean-field VI might fail. \\[0.8em]
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Carvalho, C.~M., Polson, N.~G., and Scott, J.~G. (2009).} Handling sparsity via the horseshoe. \textit{AISTATS}, pp.~73--80. \\
+& \textit{Why:} Companion conference paper to the 2010 Biometrika paper. More accessible; good figures of the shrinkage profile. Read if the Biometrika paper feels dense. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Bhadra, A., Datta, J., Polson, N.~G., and Willard, B. (2019).} Lasso meets horseshoe: A survey. \textit{Statistical Science}, 34(3):405--427. \\
+& \textit{Why:} Comprehensive survey connecting the horseshoe to penalized estimation. Useful for the literature review section of the final report. \\[0.8em]
+
+\textcolor{P4}{\textbf{P4}} &
+\textbf{Piironen, J. and Vehtari, A. (2017).} Sparsity information and regularization in the horseshoe and other shrinkage priors. \textit{Electronic J.\ Statist.}, 11(2):5018--5051. \\
+& \textit{Why:} Practical guidance on setting the global shrinkage $\tau$ based on expected sparsity. Read if you want to set $\tau$ informatively rather than using $\mathrm{C}^+(0,1)$. \\
+
+\bottomrule
+\end{longtable}
+
+
+%======================================================================
+\section{MCMC: NUTS and Hamiltonian Monte Carlo}
+%======================================================================
+
+\begin{longtable}{@{}p{0.04\textwidth}p{0.88\textwidth}@{}}
+\toprule
+\textbf{Pri.} & \textbf{Reference and Notes} \\
+\midrule
+\endhead
+
+\textcolor{P1}{\textbf{P1}} &
+\textbf{Hoffman, M.~D. and Gelman, A. (2014).} The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \textit{JMLR}, 15(1):1593--1623. \\
+& \textit{Why:} NUTS is our exact inference baseline. Read Sections~1--3 (HMC review, NUTS algorithm, dual averaging for step size). Appendix~A has the full algorithm. \\[0.8em]
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Neal, R.~M. (2011).} MCMC using Hamiltonian dynamics. Chapter 5 in \textit{Handbook of Markov Chain Monte Carlo}, CRC Press. \\
+& \textit{Why:} The canonical HMC reference. More pedagogical than Hoffman \& Gelman. Read Sections~5.1--5.4 for leapfrog integrator, mass matrix tuning, and practical guidance. \\[0.8em]
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Vehtari, A., Gelman, A., Simpson, D., Carpenter, B., and B\"urkner, P.-C. (2021).} Rank-normalization, folding, and localization: An improved $\hat{R}$ for assessing convergence of MCMC. \textit{Bayesian Analysis}, 16(2):667--718. \\
+& \textit{Why:} We need robust convergence diagnostics. Focus on the improved $\hat{R}$ and ESS definitions (Sections~2--4). This is what ArviZ/NumPyro uses internally. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Betancourt, M. (2017).} A conceptual introduction to Hamiltonian Monte Carlo. \href{https://arxiv.org/abs/1701.02434}{arXiv:1701.02434}. \\
+& \textit{Why:} Best geometric intuition for HMC. The ``funnel'' discussion (Section~4.1) is directly relevant to horseshoe posteriors. Excellent figures. \\[0.8em]
+
+\textcolor{P4}{\textbf{P4}} &
+\textbf{Phan, D., Pradhan, N., and Jankowiak, M. (2019).} Composable effects for flexible and accelerated probabilistic programming in NumPyro. \href{https://arxiv.org/abs/1912.11554}{arXiv:1912.11554}. \\
+& \textit{Why:} NumPyro reference paper. Skim for API design and JAX acceleration details. \\
+
+\bottomrule
+\end{longtable}
+
+
+%======================================================================
+\section{Variational Inference}
+%======================================================================
+
+\begin{longtable}{@{}p{0.04\textwidth}p{0.88\textwidth}@{}}
+\toprule
+\textbf{Pri.} & \textbf{Reference and Notes} \\
+\midrule
+\endhead
+
+\textcolor{P1}{\textbf{P1}} &
+\textbf{Kucukelbir, A., Tran, D., Ranganath, R., Gelman, A., and Blei, D.~M. (2017).} Automatic differentiation variational inference. \textit{JMLR}, 18(14):1--45. \\
+& \textit{Why:} ADVI is our VI method. Read Sections~2--4 (transformation, mean-field/full-rank, stochastic optimization). Section~6 has diagnostics. \\[0.8em]
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Blei, D.~M., Kucukelbir, A., and McAuliffe, J.~D. (2017).} Variational inference: A review for statisticians. \textit{JASA}, 112(518):859--877. \\
+& \textit{Why:} Accessible overview of modern VI. Read for ELBO derivation, mean-field CAVI, and the discussion of when VI works and when it doesn't. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Yao, Y., Vehtari, A., Simpson, D., and Gelman, A. (2018).} Yes, but did it work? Evaluating variational inference. \textit{ICML}. \\
+& \textit{Why:} Methods for diagnosing VI approximation quality, including PSIS-based diagnostics. Directly relevant to our comparison. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Dhaka, A.~K., Catalina, A., Andersen, M.~R., Magnusson, M., Huggins, J., and Vehtari, A. (2020).} Robust, accurate stochastic optimization for variational inference. \textit{NeurIPS}. \\
+& \textit{Why:} Addresses ADVI optimization instabilities, which we may encounter with heavy-tailed priors. \\[0.8em]
+
+\textcolor{P4}{\textbf{P4}} &
+\textbf{Rezende, D.~J. and Mohamed, S. (2015).} Variational inference with normalizing flows. \textit{ICML}. \\
+& \textit{Why:} If pursuing the normalizing flow extension. Read Sections~1--4 for the core idea. \\
+
+\bottomrule
+\end{longtable}
+
+
+%======================================================================
+\section{Covariance/Precision Estimation in Finance}
+%======================================================================
+
+\begin{longtable}{@{}p{0.04\textwidth}p{0.88\textwidth}@{}}
+\toprule
+\textbf{Pri.} & \textbf{Reference and Notes} \\
+\midrule
+\endhead
+
+\textcolor{P1}{\textbf{P1}} &
+\textbf{Ledoit, O. and Wolf, M. (2022).} The power of (non-)linear shrinking: A review and guide to covariance matrix estimation. \textit{J.\ Financial Econometrics}, 20(1):187--218. \\
+& \textit{Why:} Provides frequentist benchmarks and maps the $p/T$ landscape. Read Sections~1--4 for linear/nonlinear shrinkage and Section~6 for the portfolio application. \\[0.8em]
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Friedman, J., Hastie, T., and Tibshirani, R. (2008).} Sparse inverse covariance estimation with the graphical lasso. \textit{Biostatistics}, 9(3):432--441. \\
+& \textit{Why:} The graphical lasso is our main frequentist sparse benchmark. Short paper; read fully. Focus on the block coordinate descent algorithm and the regularization path. \\[0.8em]
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Ledoit, O. and Wolf, M. (2004).} A well-conditioned estimator for large-dimensional covariance matrices. \textit{JMVA}, 88(2):365--411. \\
+& \textit{Why:} The original linear shrinkage paper. Read for the analytical shrinkage intensity formula (Theorem~1) that we implement as a benchmark. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Fan, J., Liao, Y., and Mincheva, M. (2013).} Large covariance estimation by thresholding principal orthogonal complements. \textit{JRSS-B}, 75(4):603--680. \\
+& \textit{Why:} POET estimator---factor-model-based covariance estimation. Relevant if we pursue the Fama--French residual analysis. \\[0.8em]
+
+\textcolor{P4}{\textbf{P4}} &
+\textbf{DeMiguel, V., Garlappi, L., and Uppal, R. (2009).} Optimal versus naive diversification: How inefficient is the 1/N portfolio? \textit{Rev.\ Financial Studies}, 22(5):1915--1953. \\
+& \textit{Why:} Shows that sophisticated covariance estimators often fail to beat equal-weight portfolios out of sample. Good context for interpreting our portfolio results. \\
+
+\bottomrule
+\end{longtable}
+
+
+%======================================================================
+\section{Graphical Models and Sparsity Priors}
+%======================================================================
+
+\begin{longtable}{@{}p{0.04\textwidth}p{0.88\textwidth}@{}}
+\toprule
+\textbf{Pri.} & \textbf{Reference and Notes} \\
+\midrule
+\endhead
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Lauritzen, S.~L. (1996).} \textit{Graphical Models}. Oxford University Press. Chapters~1--5. \\
+& \textit{Why:} Foundation for understanding conditional independence $\Leftrightarrow$ zero in $\Omega$. Skim for the key theorems; not a cover-to-cover read. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Wang, H. (2012).} Bayesian graphical lasso models and efficient posterior computation. \textit{Bayesian Analysis}, 7(4):867--886. \\
+& \textit{Why:} Bayesian counterpart to the graphical lasso (double-exponential prior on $\omega_{ij}$). Useful comparison point showing why the horseshoe is preferred. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{van der Pas, S.~L., Kleijn, B.~J.~K., and van der Vaart, A.~W. (2014).} The horseshoe estimator: Posterior concentration around nearly black vectors. \textit{Electronic J.\ Statist.}, 8(2):2585--2618. \\
+& \textit{Why:} Theoretical guarantees for the horseshoe (normal means setting). Read if interested in contraction rate analysis for the extensions section. \\[0.8em]
+
+\textcolor{P4}{\textbf{P4}} &
+\textbf{Mohammadi, A. and Wit, E.~C. (2015).} Bayesian structure learning in sparse Gaussian graphical models. \textit{Bayesian Analysis}, 10(1):109--138. \\
+& \textit{Why:} Alternative Bayesian approach to GGM learning using birth-death MCMC on the graph structure. Good for ``related work'' discussion. \\
+
+\bottomrule
+\end{longtable}
+
+
+%======================================================================
+\section{Background and Textbooks}
+%======================================================================
+
+\begin{longtable}{@{}p{0.04\textwidth}p{0.88\textwidth}@{}}
+\toprule
+\textbf{Pri.} & \textbf{Reference and Notes} \\
+\midrule
+\endhead
+
+\textcolor{P2}{\textbf{P2}} &
+\textbf{Gelman, A., et al.\ (2013).} \textit{Bayesian Data Analysis}, 3rd ed. Chapters~10--13. \\
+& \textit{Why:} Reference chapters on MCMC (Ch.~11--12) and variational methods (Ch.~13). Use as needed when details in papers are unclear. \\[0.8em]
+
+\textcolor{P3}{\textbf{P3}} &
+\textbf{Murphy, K.~P. (2023).} \textit{Probabilistic Machine Learning: Advanced Topics}. Chapters on VI and MCMC. \\
+& \textit{Why:} Modern, comprehensive treatment with code examples. Good for filling gaps. Available free online. \\[0.8em]
+
+\textcolor{P4}{\textbf{P4}} &
+\textbf{Bishop, C.~M. (2006).} \textit{Pattern Recognition and Machine Learning}. Chapter~10 (Approximate Inference). \\
+& \textit{Why:} Classic derivation of mean-field VI via CAVI. Read Section~10.1 if the ADVI paper feels too abstract. \\
+
+\bottomrule
+\end{longtable}
+
+
+%======================================================================
+\section{Suggested Reading Schedule}
+%======================================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}cll@{}}
+\toprule
+\textbf{Week} & \textbf{Readings} & \textbf{Goal} \\
+\midrule
+1 & All P1 papers (4 papers) & Model understood; ready to code \\
+2 & All P2 papers (7 papers/chapters) & Context solid; benchmarks clear \\
+3 & P3 papers as relevant ($\sim$6 papers) & Deepen analysis; draft lit review \\
+4 & P4 papers if pursuing extensions & Polish final report \\
+\bottomrule
+\end{tabular}
+\caption{Weekly reading targets aligned with the project timeline.}
+\end{table}
+
+\subsection*{Recommended Reading Order Within Week 1}
+
+\begin{enumerate}[nosep]
+  \item Carvalho et al.\ (2010) --- understand the horseshoe prior first.
+  \item Li et al.\ (2019) --- then see how it extends to precision matrices.
+  \item Kucukelbir et al.\ (2017) --- understand ADVI, the method you will compare against.
+  \item Hoffman \& Gelman (2014) --- understand NUTS, your exact baseline.
+\end{enumerate}
+
+\end{document}

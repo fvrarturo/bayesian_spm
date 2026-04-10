@@ -1,0 +1,105 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\setlength{\parskip}{2pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{0pt}
+
+\title{\vspace{-1.5em}\textbf{6.7830 Project Proposal: MCMC vs.\ Variational Inference for Sparse Bayesian Precision Matrix Estimation in Equity Returns}\vspace{-0.5em}}
+\author{Nick Bernardini \and Federico V.\ Cortesi \and Arturo Favara}
+\date{\vspace{-1.5em}Massachusetts Institute of Technology}
+
+\begin{document}
+\maketitle
+\vspace{-1em}
+
+\section{Research Question}
+
+We ask: \emph{How does the quality of variational inference compare to MCMC for sparse Bayesian precision matrix estimation, and how does this comparison change as the ratio of dimension to sample size $p/T$ increases into regimes where estimation is genuinely difficult?}
+
+We adopt the \textbf{graphical horseshoe} model of Li, Craig, and Bhadra (2019), which places horseshoe priors on the off-diagonal elements of the precision matrix $\Omega = \Sigma^{-1}$. Given $n$ observations $y_k \sim \mathcal{N}(0, \Omega^{-1})$, the prior is:
+\begin{align*}
+\omega_{ij} \mid \lambda_{ij}, \tau &\sim \mathcal{N}(0, \lambda_{ij}^2 \tau^2), \quad
+\lambda_{ij} \sim \mathrm{C}^+(0,1), \quad
+\tau \sim \mathrm{C}^+(0,1),
+\end{align*}
+for off-diagonal entries $i < j$, with flat priors on the diagonal, constrained to $\Omega \in \mathcal{S}_p^+$. The global parameter $\tau$ shrinks the entire matrix toward sparsity, while local parameters $\lambda_{ij}$ allow truly non-zero partial correlations to escape shrinkage. This structure is far more informative than weakly-informative defaults such as the LKJ prior, and is specifically designed for the high-dimensional setting.
+
+We fit this model using NUTS (Hoffman and Gelman, 2014) as the exact baseline and ADVI (Kucukelbir et al., 2017) as the scalable approximation, and compare both against the frequentist benchmarks catalogued by Ledoit and Wolf (2022): the sample covariance, linear shrinkage, and the graphical lasso. We systematically vary the concentration ratio $p/T$ to identify the regimes where (a) Bayesian regularization adds value over frequentist shrinkage, and (b) ADVI's approximation begins to distort the horseshoe's shrinkage profile.
+
+\section{Connection to the Class}
+
+This is an \textbf{empirical study} of two core inference methods from 6.7830---gradient-based MCMC and variational inference---applied to a structured Bayesian model for precision matrix estimation on financial data.
+
+\textbf{(1) Exact inference via MCMC.} Li et al.\ (2019) provide a Gibbs sampler; we additionally implement the model in NumPyro and fit via NUTS, which exploits gradient information and adaptively tunes trajectory length. NUTS serves as our asymptotically exact baseline.
+
+\textbf{(2) Scalable approximation via VI.} ADVI maps constrained parameters to unconstrained space and maximizes the ELBO via stochastic gradient ascent. Its default mean-field Gaussian approximation assumes posterior independence across all transformed parameters. For the horseshoe prior, this is particularly problematic: the key property of the horseshoe is its bimodal shrinkage profile (shrink nearly to zero \emph{or} barely at all), induced by the heavy-tailed half-Cauchy on $\lambda_{ij}$. Mean-field VI may fail to represent this bimodality, potentially destroying the local-global shrinkage structure that makes the horseshoe effective.
+
+\textbf{(3) Isolating inference from prior.} A key improvement over our pre-proposal: both MCMC and VI use the \emph{identical} graphical horseshoe model and prior. Any differences in estimation quality are attributable purely to the inference approximation, not to differing shrinkage structures.
+
+\textbf{(4) Dimensionality scaling.} Free parameters grow as $O(p^2)$. By varying $p/T$, we study where MCMC becomes prohibitively slow and where VI's approximation error becomes unacceptable---directly motivated by the class discussion of when approximate methods become necessary.
+
+\section{Data}
+
+We use daily equity return data from \textbf{WRDS} (CRSP daily stock files). \textbf{We already have this data in hand.} To create estimation regimes where methods genuinely diverge, we fix $p$ and vary $T$ to produce concentration ratios where estimation is challenging. Specifically, we construct universes of $p = 50$ and $p = 100$ liquid large-cap stocks, and for each, vary the estimation window: $T = 75, 120, 250, 500$ trading days. This yields $p/T$ ratios ranging from $0.2$ (easy) to $1.3$ (genuinely hard, $p > T$). At $p/T \approx 1$ the sample covariance becomes singular and regularization is essential; this is precisely the regime where inference method choice should matter most. Returns are demeaned and standardized before fitting.
+
+\textbf{Sparsity justification.} Sparsity in $\Omega$ means conditional independence: stock $i$ and $j$ are unrelated after controlling for all others. While raw returns share factor exposures, most pairwise relationships are mediated through common factors rather than direct. Under an approximate factor model, residual partial correlations should be near zero. We verify this by examining sparsity patterns from the graphical lasso, and optionally apply the horseshoe to Fama--French residuals as a robustness check.
+
+\section{Related Work}
+
+\textbf{Ledoit and Wolf (2022).} This review in \textit{J.\ Financial Econometrics} surveys 15+ years of covariance estimation for portfolio selection, covering linear shrinkage, nonlinear shrinkage (individually optimal eigenvalue adjustment via random matrix theory), and dynamic/factor extensions. Crucially, it maps when each method matters as a function of the concentration ratio $p/T$: when $p/T$ is small, the sample covariance suffices; near $p/T \approx 1$, structured estimators become essential. This guides our experimental design and provides frequentist benchmarks.
+
+\textbf{Li, Craig, and Bhadra (2019).} This paper develops the graphical horseshoe estimator for sparse precision matrices. The horseshoe prior (Carvalho et al., 2010) combines a global shrinkage parameter with element-wise local parameters drawn from half-Cauchy distributions. Li et al.\ show that when the true precision matrix is sparse, the graphical horseshoe yields estimates with smaller KL divergence from the true model than the graphical lasso or Bayesian lasso, and near-unbiased estimation of non-zero elements. Their Gibbs sampler is $O(p^3)$ per iteration---motivating our investigation of whether ADVI can provide comparable estimates faster. The horseshoe's effectiveness depends on faithful inference over the heavy-tailed local shrinkage parameters, which mean-field VI may fail to capture.
+\newpage
+\section{Project Plan}
+
+\vspace{-0.5em}
+\begin{table}[h!!]
+\centering\small
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{Step} & \textbf{Description} & \textbf{Deadline} & \textbf{Owner} \\
+\midrule
+1 & Implement graphical horseshoe in NumPyro; validate & Week 1 & Nick, Federico \\
+  & on synthetic sparse $\Omega$ with known structure & & \\
+\midrule
+2 & Run NUTS and ADVI across $(p, T)$ grid; & Week 2 & Arturo, Nick \\
+  & convergence diagnostics ($\hat{R}$, ESS, ELBO traces) & & \\
+\midrule
+3 & Evaluate: Stein's loss, Frobenius error, sparsity recovery, & Week 3 & Federico, Arturo \\
+  & eigenvalue spectrum; compare against graphical lasso, & & \\
+  & Ledoit--Wolf, and sample covariance & & \\
+\midrule
+4 & Downstream portfolio test (min-variance weights, & Week 4 & All \\
+  & out-of-sample volatility); write-up \& presentation & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+\vspace{-0.5em}
+
+\section{Risks and Mitigation}
+
+\textbf{NUTS may be prohibitively slow for $p{=}100$.} The graphical horseshoe has $O(p^2)$ parameters and $O(p^3)$ per-iteration cost. We use NumPyro's JAX backend for GPU acceleration. If infeasible at $p{=}100$, we use Li et al.'s Gibbs sampler as MCMC baseline and restrict NUTS to $p{=}50$.
+
+\textbf{ADVI may fail to capture bimodal shrinkage.} The half-Cauchy local parameters produce a ``shrink or don't'' profile that Gaussian mean-field cannot represent. We test both mean-field and full-rank ADVI; failure itself would be an informative finding about VI's limits for global-local priors.
+
+\textbf{Precision matrices may not be sparse.} If common factors dominate, $\Omega$ is approximately low-rank rather than sparse. We check empirically via graphical lasso and run the horseshoe on Fama--French residuals where sparsity is more defensible.
+
+\textbf{Gaussian iid assumption.} Stock returns exhibit fat tails and volatility clustering; we acknowledge this but note it affects both inference methods equally, so our comparison isolates inference quality holding the model fixed.
+
+\section*{References}
+{\small
+\begin{enumerate}[leftmargin=*,label={[\arabic*]},itemsep=1pt]
+    \item Ledoit, O.\ and Wolf, M.\ (2022). The power of (non-)linear shrinking: A review and guide to covariance matrix estimation. \textit{J.\ Financial Econometrics}, 20(1):187--218.
+    \item Li, Y., Craig, B.\ A., and Bhadra, A.\ (2019). The graphical horseshoe estimator for inverse covariance matrices. \textit{Bayesian Analysis}, 14(3):735--757.
+    \item Kucukelbir, A., Tran, D., Ranganath, R., Gelman, A., and Blei, D.\ M.\ (2017). Automatic differentiation variational inference. \textit{JMLR}, 18(14):1--45.
+    \item Hoffman, M.\ D.\ and Gelman, A.\ (2014). The No-U-Turn Sampler. \textit{JMLR}, 15(1):1593--1623.
+    \item Carvalho, C.\ M., Polson, N.\ G., and Scott, J.\ G.\ (2010). The horseshoe estimator for sparse signals. \textit{Biometrika}, 97(2):465--480.
+    \item Friedman, J., Hastie, T., and Tibshirani, R.\ (2008). Sparse inverse covariance estimation with the graphical lasso. \textit{Biostatistics}, 9(3):432--441.
+\end{enumerate}
+}
+
+\end{document}

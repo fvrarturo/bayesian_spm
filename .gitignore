@@ -1,0 +1,41 @@
+# Data (large / licensed)
+data/raw/*
+!data/raw/.gitkeep
+*.parquet
+*.csv
+*.h5
+*.hdf5
+*.npz
+*.pkl
+
+# Results & figures (regenerable)
+results/*
+!results/.gitkeep
+figures/*
+!figures/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environments
+.env
+*.env

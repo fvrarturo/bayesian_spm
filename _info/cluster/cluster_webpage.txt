@@ -1,0 +1,183 @@
+MIT Binary Star Astrophysics Group
+
+Search
+
+Home Research People
+
+Instruments proto-Lightspeed
+
+Other instruments we use HiPERCAM LLAMAS
+
+Resources Engaging Box
+
+Collaborators Publications News Pictures
+
+Engaging
+
+About
+
+The Engaging cluster is a mixed CPU and GPU computing cluster managed with Slurm. On Engaging, you can run your work in two ways:
+
+Interactive jobs give you a live shell on a compute node. Use these for development and troubleshooting.
+
+Batch jobs run your code automatically from a job script. Submit them with sbatch for heavy or long-running computations. Batch jobs wait in the queue and run when resources are available.
+
+Quick Start: Running an Interactive Job
+
+If you don’t already have access, visit the OnDemand Portal and log in with your MIT Kerberos credentials. This will automatically initiate account creation for the Engaging Cluster.
+
+The fastest way to get started on the Engaging cluster is through the OnDemand web portal, which provides browser-based access to interactive compute sessions, Jupyter notebooks, and terminals without needing to manage SSH connections manually.
+
+Alternative: Logging in via SSH
+
+Users may prefer to connect directly via SSH to the Engaging login nodes. This provides a traditional terminal interface and is useful for scripting, batch job submission, or when working outside the browser.
+
+Log in via your terminal:
+
+ssh USERNAME@orcd-login001.mit.edu
+
+Replace USERNAME with your Kerberos username. You’ll be prompted for your Kerberos password and two-factor authentification.
+
+You can also use orcd-login002, orcd-login003, or orcd-login004. These are functionally the same — if one login node is slow, try another.
+
+Login nodes are not meant for heavy computations, so let’s request an interactive session on one of our group’s nodes (partition: sched_mit_kburdge_r8). First check which group compute nodes are available:
+
+sinfo -N -l -p sched_mit_kburdge_r8
+
+Sample output:
+
+NODELIST NODES PARTITION STATE CPUS S:C:T MEMORY TMP_DISK WEIGHT AVAIL_FE REASON node2002 1 sched_mit_kburdge_r8 idle 256 2:64:2 515000 0 1 node2002 none node2003 1 sched_mit_kburdge_r8 idle 256 2:64:2 515000 0 1 node2003 none node2004 1 sched_mit_kburdge_r8 idle 256 2:64:2 515000 0 1 node2004 none node2005 1 sched_mit_kburdge_r8 idle 256 2:64:2 515000 0 1 node2005 none
+
+Choose an idle node (e.g., node2002), then request an interactive session:
+
+salloc --nodelist=node2002 --ntasks=1 --cpus-per-task=1 --mem=2G --time=01:00:00 -p sched_mit_kburdge_r8
+
+This example requests 1 task, 1 CPU, 2 GB of memory, and 30 minutes of runtime on a node in our group partition (sched_mit_kburdge_r8). See below for other partitions.
+
+Always set –time. Jobs without a time limit may fail to submit.
+
+To request GPUs interactively, use, e.g.: –gres=gpu:2
+
+On our cluster, most software–compilers, libraries, applications–is managed using the module system. To see what’s already installed, run:
+
+module avail
+
+Troubleshooting module errors (e.g., bash: module: command not found): some (older, e.g. sched_mit_mki) compute nodes don’t automatically load the environment needed for the module system. If you see this error, simply run: source /etc/profile
+
+You might need specialized tools that aren’t installed system-wide. We encourage each user to use conda environments to manage their own software. On Engaging, Conda is available via the Miniforge module. To make conda commands available in your shell, run:
+
+module load miniforge
+
+Example survey workflows
+
+Below are example Jupyter notebooks demonstrating how to access and work with large time-domain survey datasets on the Engaging cluster. These notebooks are intended as lightweight, practical starting points rather than full analysis pipelines.
+
+They assume you are running on Engaging (either via an interactive session or OnDemand Jupyter) and have a working Python/conda environment.
+
+Accessing ZTF light curves on Engaging
+
+Accessing ATLAS light curves on Engaging
+
+Quick Start: Running a Batch Job
+
+Batch jobs on Engaging let you run work without staying logged in. You submit a job script, and Slurm runs it automatically once resources are available.
+
+Create a Slurm script (e.g. script.sh) with the following format:
+
+#!/bin/bash #SBATCH -p sched_mit_kburdge_r8 # partition name #SBATCH --job-name=myjob # name for your job #SBATCH --gres=gpu:2 # if you need GPUs #SBATCH --ntasks=1 # number of tasks (often 1 for serial jobs) #SBATCH --cpus-per-task=4 # CPU cores per task #SBATCH --mem=16G # memory per node #SBATCH --time=02:00:00 # max walltime (HH:MM:SS) #SBATCH --output=slurm-%j.out # output file (%j = job ID) to capture logs for debugging
+
+# Load your shell environment to activate your Conda environment source /home/user/.bashrc conda activate myconda
+
+# Load any modules or software you need module load cuda/12.0
+
+# Run your command or script python my_analysis.py
+
+Then submit your job:
+
+sbatch script.sh
+
+Slurm will assign a job ID and run your job when resources are free.
+
+You can see your running and pending jobs with:
+
+squeue -u $USER
+
+Furthermore, you can check your job details, including its CPUs, memory, time limits, and node allocation.
+
+scontrol show job <jobid>
+
+Cancel the job with:
+
+scancel <jobid>
+
+Lastly, view accounting info for finished jobs: shows job IDs, run times, exit codes, etc.
+
+sacct -u $USER
+
+Filesystems
+
+Storage Type Path Quota Backed up Purpose
+
+Home DirectoryFlash /home/<username> 200 GB Backed up with snapshots Use for important files and software
+
+Burdge Group Storage /orcd/data/kburdge/001 100 TB Backed up Use for important files and software
+
+PoolHard Disk /home/<username>/orcd/pool 1 TB Disaster recovery backup Storing larger datasets
+
+ScratchFlash /home/<username>/orcd/scratch 1 TB Not backed up Scratch space for I/O heavy jobs
+
+If you have not logged in for 6 months files in /home/<username>/orcd/scratch will be deleted.
+
+Partition information
+
+Starting Jan 1, 2026, the partition names will change as follows:CPU Nodes:sched_mit_kburdge -> pi_kburdgesched_mit_mki -> ou_mkisched_mit_mki_preempt -> ou_mki_preemptGPU Nodes:sched_mit_kburdge_r8 -> pi_kburdge_gpusched_mit_mki_r8 -> ou_mki_gpusched_mit_mki_preempt_r8 -> ou_mki_preempt_gpu
+
+Partition Name
+
+Purpose Nodes Resources Max Time Limit
+
+sched_mit_kburdge_r8 Long-running batch or interactive jobs needing CPU or GPU resources for the Burdge group. 4 nodes(node2002-node2005) 256 CPU cores/node4 GPUs/node~515 GB RAM/node 14 days
+
+sched_mit_mki Longer CPU-only jobs on shared MKI (CentOS 7) nodes. 27 nodes(node1399-node1414,node1447-node1458) Varies by node~64 cores/node~384 GB RAM/node 14 days
+
+sched_mit_mki_r8 GPU workloads on shared MKI nodes. 2 nodes(node2000,node2001) 128 cores/node4 GPUs/node~515 GB RAM/node 7 days
+
+mit_normal Batch and interactive CPU-only jobs on MIT-wide shared nodes. 52 nodes(node1600-1625,node2704-2705,node3103-3114,node3303-3314) 96 cores/node~520 GB RAM/node 12 hours
+
+mit_normal_gpu Batch or interactive jobs that need a GPU. 75 nodes(node2433-2434,node2804,node2906,node3000-3008,node3100-3101,node3200-3208,node3300-3302,node3400,node3402-3408,node3500-3512,node4102-4108,node4200-4212,node4302-4305,node4502-4504) Partition totals: 4 H100 GPUs88 H200 GPUs252 L40S5416 cores (~72 cores/node)~1.18 TB RAM/node 6 hours
+
+Other Useful Slurm Commands
+
+List all partitions: shows which partitions exist, how many nodes are available, and time limits.
+
+sinfo
+
+Summarized view of partitions: one-line summary per partition for a quick overview.
+
+sinfo -s
+
+Show nodes in a specific partition:
+
+sinfo -p <partition_name> -N -l
+
+Show hardware and limits of a partition:
+
+scontrol show partition <partition_name>
+
+Check details of a specific node:
+
+scontrol show node <node_name>
+
+Resources
+
+See the ORCD documentation.
+
+Using VSCode on Engaging
+
+See the Slurm documentation.
+
+Using MKI Engaging GPUs for AI Applications
+
+Massachusetts Institute of Technology77 Massachusetts Avenue, Cambridge, MA, USA
+
+Accessibility

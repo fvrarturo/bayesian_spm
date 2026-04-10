@@ -1,0 +1,20 @@
+name: ggm_horseshoe
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - jax
+  - jaxlib
+  - numpyro
+  - arviz
+  - scikit-learn
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  - networkx
+  - statsmodels
+  - jupyter
+  - pip:
+    - wrds
+    - yfinance
