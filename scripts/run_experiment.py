@@ -18,7 +18,7 @@ from src.evaluation.metrics import frobenius_loss, spectral_loss, sparsity_metri
 from src.utils.matrix_utils import (
     sample_data_from_omega,
     sparse_omega_band,
-    sparse_omega_block,
+    sparse_omega_block_diagonal,
     sparse_omega_erdos_renyi,
 )
 
@@ -26,7 +26,7 @@ from src.utils.matrix_utils import (
 GRAPH_GENERATORS = {
     "erdos_renyi": sparse_omega_erdos_renyi,
     "band": sparse_omega_band,
-    "block": sparse_omega_block,
+    "block_diagonal": sparse_omega_block_diagonal,
 }
 
 
@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument("--sparsity", type=float, default=0.10,
                         help="Sparsity level for synthetic data")
     parser.add_argument("--graph", type=str, default="erdos_renyi",
-                        choices=["erdos_renyi", "band", "block"],
+                        choices=["erdos_renyi", "band", "block_diagonal"],
                         help="Graph structure for synthetic data")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--output-dir", type=str, default="results/",
@@ -70,10 +70,10 @@ def generate_synthetic_data(args):
     kwargs = {"p": args.p, "seed": args.seed}
     if args.graph == "erdos_renyi":
         kwargs["sparsity"] = args.sparsity
-    elif args.graph == "block":
+    elif args.graph == "block_diagonal":
         kwargs["intra_sparsity"] = args.sparsity
 
-    Omega_true, edge_set = gen_fn(**kwargs)
+    Omega_true, edge_set, _ = gen_fn(**kwargs)
     Y = sample_data_from_omega(Omega_true, T=args.T, seed=args.seed + 1)
     return Y, Omega_true, edge_set
 

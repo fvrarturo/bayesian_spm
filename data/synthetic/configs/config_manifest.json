@@ -1,0 +1,1346 @@
+[
+  {
+    "config_id": 0,
+    "p": 10,
+    "gamma": 0.9,
+    "T": 12,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma090/s005"
+  },
+  {
+    "config_id": 1,
+    "p": 10,
+    "gamma": 0.9,
+    "T": 12,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma090/s010"
+  },
+  {
+    "config_id": 2,
+    "p": 10,
+    "gamma": 0.9,
+    "T": 12,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma090/s005"
+  },
+  {
+    "config_id": 3,
+    "p": 10,
+    "gamma": 0.9,
+    "T": 12,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma090/s010"
+  },
+  {
+    "config_id": 4,
+    "p": 10,
+    "gamma": 0.67,
+    "T": 15,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma067/s005"
+  },
+  {
+    "config_id": 5,
+    "p": 10,
+    "gamma": 0.67,
+    "T": 15,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma067/s010"
+  },
+  {
+    "config_id": 6,
+    "p": 10,
+    "gamma": 0.67,
+    "T": 15,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma067/s030"
+  },
+  {
+    "config_id": 7,
+    "p": 10,
+    "gamma": 0.67,
+    "T": 15,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma067/s005"
+  },
+  {
+    "config_id": 8,
+    "p": 10,
+    "gamma": 0.67,
+    "T": 15,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma067/s010"
+  },
+  {
+    "config_id": 9,
+    "p": 10,
+    "gamma": 0.67,
+    "T": 15,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma067/s030"
+  },
+  {
+    "config_id": 10,
+    "p": 10,
+    "gamma": 0.42,
+    "T": 24,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma042/s005"
+  },
+  {
+    "config_id": 11,
+    "p": 10,
+    "gamma": 0.42,
+    "T": 24,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma042/s010"
+  },
+  {
+    "config_id": 12,
+    "p": 10,
+    "gamma": 0.42,
+    "T": 24,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma042/s030"
+  },
+  {
+    "config_id": 13,
+    "p": 10,
+    "gamma": 0.42,
+    "T": 24,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma042/s005"
+  },
+  {
+    "config_id": 14,
+    "p": 10,
+    "gamma": 0.42,
+    "T": 24,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma042/s010"
+  },
+  {
+    "config_id": 15,
+    "p": 10,
+    "gamma": 0.42,
+    "T": 24,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma042/s030"
+  },
+  {
+    "config_id": 16,
+    "p": 10,
+    "gamma": 0.2,
+    "T": 50,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma020/s005"
+  },
+  {
+    "config_id": 17,
+    "p": 10,
+    "gamma": 0.2,
+    "T": 50,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma020/s010"
+  },
+  {
+    "config_id": 18,
+    "p": 10,
+    "gamma": 0.2,
+    "T": 50,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma020/s030"
+  },
+  {
+    "config_id": 19,
+    "p": 10,
+    "gamma": 0.2,
+    "T": 50,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma020/s005"
+  },
+  {
+    "config_id": 20,
+    "p": 10,
+    "gamma": 0.2,
+    "T": 50,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma020/s010"
+  },
+  {
+    "config_id": 21,
+    "p": 10,
+    "gamma": 0.2,
+    "T": 50,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma020/s030"
+  },
+  {
+    "config_id": 22,
+    "p": 10,
+    "gamma": 0.1,
+    "T": 100,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma010/s005"
+  },
+  {
+    "config_id": 23,
+    "p": 10,
+    "gamma": 0.1,
+    "T": 100,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma010/s010"
+  },
+  {
+    "config_id": 24,
+    "p": 10,
+    "gamma": 0.1,
+    "T": 100,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p010/gamma010/s030"
+  },
+  {
+    "config_id": 25,
+    "p": 10,
+    "gamma": 0.1,
+    "T": 100,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma010/s005"
+  },
+  {
+    "config_id": 26,
+    "p": 10,
+    "gamma": 0.1,
+    "T": 100,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma010/s010"
+  },
+  {
+    "config_id": 27,
+    "p": 10,
+    "gamma": 0.1,
+    "T": 100,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 2,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p010/gamma010/s030"
+  },
+  {
+    "config_id": 28,
+    "p": 50,
+    "gamma": 0.9,
+    "T": 56,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma090/s005"
+  },
+  {
+    "config_id": 29,
+    "p": 50,
+    "gamma": 0.9,
+    "T": 56,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma090/s010"
+  },
+  {
+    "config_id": 30,
+    "p": 50,
+    "gamma": 0.9,
+    "T": 56,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma090/s005"
+  },
+  {
+    "config_id": 31,
+    "p": 50,
+    "gamma": 0.9,
+    "T": 56,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma090/s010"
+  },
+  {
+    "config_id": 32,
+    "p": 50,
+    "gamma": 0.67,
+    "T": 75,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma067/s005"
+  },
+  {
+    "config_id": 33,
+    "p": 50,
+    "gamma": 0.67,
+    "T": 75,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma067/s010"
+  },
+  {
+    "config_id": 34,
+    "p": 50,
+    "gamma": 0.67,
+    "T": 75,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma067/s030"
+  },
+  {
+    "config_id": 35,
+    "p": 50,
+    "gamma": 0.67,
+    "T": 75,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma067/s005"
+  },
+  {
+    "config_id": 36,
+    "p": 50,
+    "gamma": 0.67,
+    "T": 75,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma067/s010"
+  },
+  {
+    "config_id": 37,
+    "p": 50,
+    "gamma": 0.67,
+    "T": 75,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma067/s030"
+  },
+  {
+    "config_id": 38,
+    "p": 50,
+    "gamma": 0.42,
+    "T": 120,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma042/s005"
+  },
+  {
+    "config_id": 39,
+    "p": 50,
+    "gamma": 0.42,
+    "T": 120,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma042/s010"
+  },
+  {
+    "config_id": 40,
+    "p": 50,
+    "gamma": 0.42,
+    "T": 120,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma042/s030"
+  },
+  {
+    "config_id": 41,
+    "p": 50,
+    "gamma": 0.42,
+    "T": 120,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma042/s005"
+  },
+  {
+    "config_id": 42,
+    "p": 50,
+    "gamma": 0.42,
+    "T": 120,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma042/s010"
+  },
+  {
+    "config_id": 43,
+    "p": 50,
+    "gamma": 0.42,
+    "T": 120,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma042/s030"
+  },
+  {
+    "config_id": 44,
+    "p": 50,
+    "gamma": 0.2,
+    "T": 250,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma020/s005"
+  },
+  {
+    "config_id": 45,
+    "p": 50,
+    "gamma": 0.2,
+    "T": 250,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma020/s010"
+  },
+  {
+    "config_id": 46,
+    "p": 50,
+    "gamma": 0.2,
+    "T": 250,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma020/s030"
+  },
+  {
+    "config_id": 47,
+    "p": 50,
+    "gamma": 0.2,
+    "T": 250,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma020/s005"
+  },
+  {
+    "config_id": 48,
+    "p": 50,
+    "gamma": 0.2,
+    "T": 250,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma020/s010"
+  },
+  {
+    "config_id": 49,
+    "p": 50,
+    "gamma": 0.2,
+    "T": 250,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma020/s030"
+  },
+  {
+    "config_id": 50,
+    "p": 50,
+    "gamma": 0.1,
+    "T": 500,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma010/s005"
+  },
+  {
+    "config_id": 51,
+    "p": 50,
+    "gamma": 0.1,
+    "T": 500,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma010/s010"
+  },
+  {
+    "config_id": 52,
+    "p": 50,
+    "gamma": 0.1,
+    "T": 500,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p050/gamma010/s030"
+  },
+  {
+    "config_id": 53,
+    "p": 50,
+    "gamma": 0.1,
+    "T": 500,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma010/s005"
+  },
+  {
+    "config_id": 54,
+    "p": 50,
+    "gamma": 0.1,
+    "T": 500,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma010/s010"
+  },
+  {
+    "config_id": 55,
+    "p": 50,
+    "gamma": 0.1,
+    "T": 500,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p050/gamma010/s030"
+  },
+  {
+    "config_id": 56,
+    "p": 100,
+    "gamma": 0.9,
+    "T": 112,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma090/s005"
+  },
+  {
+    "config_id": 57,
+    "p": 100,
+    "gamma": 0.9,
+    "T": 112,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma090/s010"
+  },
+  {
+    "config_id": 58,
+    "p": 100,
+    "gamma": 0.9,
+    "T": 112,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma090/s005"
+  },
+  {
+    "config_id": 59,
+    "p": 100,
+    "gamma": 0.9,
+    "T": 112,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma090/s010"
+  },
+  {
+    "config_id": 60,
+    "p": 100,
+    "gamma": 0.67,
+    "T": 150,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma067/s005"
+  },
+  {
+    "config_id": 61,
+    "p": 100,
+    "gamma": 0.67,
+    "T": 150,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma067/s010"
+  },
+  {
+    "config_id": 62,
+    "p": 100,
+    "gamma": 0.67,
+    "T": 150,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma067/s030"
+  },
+  {
+    "config_id": 63,
+    "p": 100,
+    "gamma": 0.67,
+    "T": 150,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma067/s005"
+  },
+  {
+    "config_id": 64,
+    "p": 100,
+    "gamma": 0.67,
+    "T": 150,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma067/s010"
+  },
+  {
+    "config_id": 65,
+    "p": 100,
+    "gamma": 0.67,
+    "T": 150,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma067/s030"
+  },
+  {
+    "config_id": 66,
+    "p": 100,
+    "gamma": 0.42,
+    "T": 239,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma042/s005"
+  },
+  {
+    "config_id": 67,
+    "p": 100,
+    "gamma": 0.42,
+    "T": 239,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma042/s010"
+  },
+  {
+    "config_id": 68,
+    "p": 100,
+    "gamma": 0.42,
+    "T": 239,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma042/s030"
+  },
+  {
+    "config_id": 69,
+    "p": 100,
+    "gamma": 0.42,
+    "T": 239,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma042/s005"
+  },
+  {
+    "config_id": 70,
+    "p": 100,
+    "gamma": 0.42,
+    "T": 239,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma042/s010"
+  },
+  {
+    "config_id": 71,
+    "p": 100,
+    "gamma": 0.42,
+    "T": 239,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma042/s030"
+  },
+  {
+    "config_id": 72,
+    "p": 100,
+    "gamma": 0.2,
+    "T": 500,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma020/s005"
+  },
+  {
+    "config_id": 73,
+    "p": 100,
+    "gamma": 0.2,
+    "T": 500,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma020/s010"
+  },
+  {
+    "config_id": 74,
+    "p": 100,
+    "gamma": 0.2,
+    "T": 500,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma020/s030"
+  },
+  {
+    "config_id": 75,
+    "p": 100,
+    "gamma": 0.2,
+    "T": 500,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma020/s005"
+  },
+  {
+    "config_id": 76,
+    "p": 100,
+    "gamma": 0.2,
+    "T": 500,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma020/s010"
+  },
+  {
+    "config_id": 77,
+    "p": 100,
+    "gamma": 0.2,
+    "T": 500,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma020/s030"
+  },
+  {
+    "config_id": 78,
+    "p": 100,
+    "gamma": 0.1,
+    "T": 1000,
+    "graph": "erdos_renyi",
+    "sparsity": 0.05,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma010/s005"
+  },
+  {
+    "config_id": 79,
+    "p": 100,
+    "gamma": 0.1,
+    "T": 1000,
+    "graph": "erdos_renyi",
+    "sparsity": 0.1,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma010/s010"
+  },
+  {
+    "config_id": 80,
+    "p": 100,
+    "gamma": 0.1,
+    "T": 1000,
+    "graph": "erdos_renyi",
+    "sparsity": 0.3,
+    "n_blocks": null,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "erdos_renyi/p100/gamma010/s030"
+  },
+  {
+    "config_id": 81,
+    "p": 100,
+    "gamma": 0.1,
+    "T": 1000,
+    "graph": "block_diagonal",
+    "sparsity": 0.05,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma010/s005"
+  },
+  {
+    "config_id": 82,
+    "p": 100,
+    "gamma": 0.1,
+    "T": 1000,
+    "graph": "block_diagonal",
+    "sparsity": 0.1,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma010/s010"
+  },
+  {
+    "config_id": 83,
+    "p": 100,
+    "gamma": 0.1,
+    "T": 1000,
+    "graph": "block_diagonal",
+    "sparsity": 0.3,
+    "n_blocks": 5,
+    "signal_range": [
+      0.3,
+      0.8
+    ],
+    "n_seeds": 20,
+    "skip": false,
+    "dir_path": "block_diagonal/p100/gamma010/s030"
+  }
+]

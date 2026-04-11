@@ -1,6 +1,8 @@
 # Data (large / licensed)
 data/raw/*
 !data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
 *.parquet
 *.csv
 *.h5
@@ -8,11 +10,23 @@ data/raw/*
 *.npz
 *.pkl
 
+# Synthetic data is regenerable from the manifest + generator
+data/synthetic/erdos_renyi/
+data/synthetic/block_diagonal/
+data/synthetic/band/
+# keep the manifest itself under version control
+!data/synthetic/configs/
+data/synthetic/configs/*.json.bak
+
 # Results & figures (regenerable)
 results/*
 !results/.gitkeep
 figures/*
 !figures/.gitkeep
+
+# SLURM / job logs
+logs/*
+!logs/.gitkeep
 
 # Python
 __pycache__/
