@@ -75,9 +75,31 @@ def graphical_horseshoe(Y, p, ncp=True, tau_scale=1.0, diag_prior="halfnormal"):
     Omega = Omega + Omega.T
     Omega = Omega + jnp.diag(omega_diag)
 
+    # --- Diagonal jitter for numerical PD stability ---
+    # A tiny epsilon on the diagonal is a standard device in Gaussian
+    # hierarchical models.  It costs us nothing in the well-conditioned
+    # regime (the true Omega has min eigenvalue >= 0.1, so 1e-6 is
+    # 5 orders of magnitude below the signal) and prevents samples that
+    # would otherwise land exactly on the non-PD boundary from producing
+    # NaN log-densities.  Critical for ADVI, which draws many variational
+    # samples per gradient step and where a single NaN poisons the whole
+    # optimization trajectory.
+    Omega = Omega + 1e-6 * jnp.eye(p)
+
     # --- Likelihood ---
+    # validate_args=False is critical.  During NUTS leapfrog trajectories the
+    # sampler can transiently propose (tau, lambdas, z, omega_diag) values
+    # that make Omega indefinite.  With the default validation on, NumPyro
+    # raises a Python ValueError at distribution construction time, which
+    # crashes the entire run.  With it off, cho_factor of a non-PD Omega
+    # yields NaNs, the log-density evaluates to NaN, and NUTS correctly
+    # treats the transition as a divergence and rejects it.
     numpyro.sample(
         "Y",
-        dist.MultivariateNormal(loc=jnp.zeros(p), precision_matrix=Omega),
+        dist.MultivariateNormal(
+            loc=jnp.zeros(p),
+            precision_matrix=Omega,
+            validate_args=False,
+        ),
         obs=Y,
     )

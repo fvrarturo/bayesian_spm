@@ -19,8 +19,13 @@ data/synthetic/band/
 data/synthetic/configs/*.json.bak
 
 # Results & figures (regenerable)
-results/*
-!results/.gitkeep
+results/synthetic/erdos_renyi/
+results/synthetic/block_diagonal/
+results/synthetic/band/
+results/task_manifests/*.json
+!results/task_manifests/.gitkeep
+results/summary/*.json
+!results/summary/.gitkeep
 figures/*
 !figures/.gitkeep
 

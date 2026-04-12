@@ -1,0 +1,155 @@
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 1
+
+======================================================================
+  CHECK 1: edge-count distribution per (graph, p, s)
+======================================================================
+graph               p      s     n      mean       std    min    max  expected
+------------------------------------------------------------------------------
+block_diagonal     10   0.05   100       1.1       1.1      0      4       1.0
+block_diagonal     10   0.10   100       2.0       1.2      0      4       2.0
+block_diagonal     10   0.30    80       5.6       1.9      2     10       6.0
+block_diagonal     50   0.05   100      10.8       3.6      5     16      11.2
+block_diagonal     50   0.10   100      22.2       5.6     12     33      22.5
+block_diagonal     50   0.30    80      66.4       7.6     52     81      67.5
+block_diagonal    100   0.05   100      45.2       7.5     34     58      47.5
+block_diagonal    100   0.10   100      94.0       9.8     74    108      95.0
+block_diagonal    100   0.30    80     284.9      11.7    264    307     285.0
+erdos_renyi        10   0.05   100       3.0       1.7      1      6       2.2
+erdos_renyi        10   0.10   100       5.0       2.3      1      9       4.5
+erdos_renyi        10   0.30    80      13.3       2.6      9     18      13.5
+erdos_renyi        50   0.05   100      60.5       7.6     44     75      61.2
+erdos_renyi        50   0.10   100     121.8      10.5    105    143     122.5
+erdos_renyi        50   0.30    80     365.9      14.5    343    401     367.5
+erdos_renyi       100   0.05   100     249.6      13.9    213    274     247.5
+erdos_renyi       100   0.10   100     497.5      15.5    471    524     495.0
+erdos_renyi       100   0.30    80    1491.8      37.4   1427   1596    1485.0
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 2
+
+======================================================================
+  CHECK 2: condition-number distribution per (graph, p, s)
+======================================================================
+graph               p      s      median         max         p95
+----------------------------------------------------------------
+block_diagonal     10   0.05         2.5        13.1        13.1
+block_diagonal     10   0.10         7.0        22.7        22.7
+block_diagonal     10   0.30        22.3        30.4        30.4
+block_diagonal     50   0.05        20.2        25.9        25.9
+block_diagonal     50   0.10        24.8        32.9        32.9
+block_diagonal     50   0.30        37.0        44.5        44.5
+block_diagonal    100   0.05        26.9        33.3        33.3
+block_diagonal    100   0.10        35.3        39.4        39.4
+block_diagonal    100   0.30        55.1        64.0        64.0
+erdos_renyi        10   0.05         7.6        25.7        25.7
+erdos_renyi        10   0.10        20.1        32.5        32.5
+erdos_renyi        10   0.30        31.3        38.2        38.2
+erdos_renyi        50   0.05        39.1        42.8        42.8
+erdos_renyi        50   0.10        50.2        54.6        54.6
+erdos_renyi        50   0.30        83.3        89.7        89.7
+erdos_renyi       100   0.05        53.8        58.6        58.6
+erdos_renyi       100   0.10        72.5        78.8        78.8
+erdos_renyi       100   0.30       121.3       124.6       124.6
+
+  Global max condition number: 124.6
+  (anything > 1000 should already have triggered a warning)
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 3
+
+======================================================================
+  CHECK 3: minimum eigenvalue >= 0.1 across all seeds
+======================================================================
+  Total seeds checked:   1680
+  Below floor (<0.1): 0  (must be 0)
+  Min eigenvalue across all seeds: 0.1000000000  (should be ~0.1)
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 4
+
+======================================================================
+  CHECK 4: aggregate warnings across all seeds
+======================================================================
+  Total seeds:           1680
+  Seeds with warnings:   273
+  Total warning lines:   273
+
+  Warning categories:
+      273  large diagonal shift
+
+  Top 10 configs by warning count:
+    cfg= 52  20 warnings across 20 seeds
+    cfg= 46  20 warnings across 20 seeds
+    cfg= 40  20 warnings across 20 seeds
+    cfg= 34  20 warnings across 20 seeds
+    cfg= 79  20 warnings across 20 seeds
+    cfg= 80  20 warnings across 20 seeds
+    cfg= 73  20 warnings across 20 seeds
+    cfg= 74  20 warnings across 20 seeds
+    cfg= 67  20 warnings across 20 seeds
+    cfg= 68  20 warnings across 20 seeds
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 5
+
+======================================================================
+  CHECK 5: cross-seed independence (pairwise edge-set overlap)
+======================================================================
+  Target config: erdos_renyi p=50 s=0.30 (config 40)
+  Seeds inspected:           20
+  Distinct edge sets:        20 (must equal n_seeds)
+
+  Mean pairwise overlap:     108.8
+  Median pairwise overlap:   108
+  Min pairwise overlap:      84
+  Max pairwise overlap:      144
+  Expected (s^2 * C(p,2)):   110.2
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 6
+
+======================================================================
+  CHECK 6: Omega @ Sigma == I on 50 random seeds
+======================================================================
+  Sampled seeds:                       50
+  Worst max(|Omega @ Sigma - I|):      2.10e-15
+  Tolerance (validation enforces):     1.00e-08
+  STATUS: ok
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 7
+
+======================================================================
+  CHECK 7: distribution of per-seed sample-mean z-scores
+======================================================================
+  Seeds with z-score:    1680
+  Mean max-z:            2.25
+  Median max-z:          2.26
+  P90 max-z:             2.95
+  P99 max-z:             3.55
+  Max max-z:             4.38
+  Number > 5 (warning):  0
+  Number > 6:            0
+  Number > 7:            0
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ python scripts/sanity_checks.py --check 8
+
+======================================================================
+  CHECK 8: (p, T) distribution and seed counts
+======================================================================
+(p, T)           n_seeds              gammas
+--------------------------------------------
+  ( 10,   12)        80     [0.9]
+  ( 10,   15)       120     [0.67]
+  ( 10,   24)       120     [0.42]
+  ( 10,   50)       120     [0.2]
+  ( 10,  100)       120     [0.1]
+  ( 50,   56)        80     [0.9]
+  ( 50,   75)       120     [0.67]
+  ( 50,  120)       120     [0.42]
+  ( 50,  250)       120     [0.2]
+  ( 50,  500)       120     [0.1]
+  (100,  112)        80     [0.9]
+  (100,  150)       120     [0.67]
+  (100,  239)       120     [0.42]
+  (100,  500)       120     [0.2]
+  (100, 1000)       120     [0.1]
+
+  Total (p, T) pairs: 15  (expected 15)
+  Total seeds:        1680  (expected 1680)
+
+(ggm_horseshoe) [favara@login006 bayesian_spm]$ 
