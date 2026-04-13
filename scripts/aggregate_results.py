@@ -42,7 +42,7 @@ DEFAULT_MANIFEST = REPO_ROOT / "data" / "synthetic" / "configs" / "config_manife
 DEFAULT_RESULTS_ROOT = REPO_ROOT / "results" / "synthetic"
 DEFAULT_SUMMARY_DIR = REPO_ROOT / "results" / "summary"
 
-ALL_METHODS = ["nuts", "advi_mf", "advi_fr", "glasso", "ledoit_wolf", "sample_cov"]
+ALL_METHODS = ["nuts", "gibbs", "advi_mf", "advi_fr", "advi_lr", "glasso", "ledoit_wolf", "sample_cov"]
 
 # Numeric metrics we aggregate (mean/std across seeds).  Others pass through
 # as the mode / last value.

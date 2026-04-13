@@ -42,7 +42,7 @@ DEFAULT_SUMMARY_DIR = REPO_ROOT / "results" / "summary"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "figures"
 
 # The order here controls the panel layout for the heatmap figure.
-HEATMAP_METHODS = ["sample_cov", "ledoit_wolf", "glasso", "nuts", "advi_mf"]
+HEATMAP_METHODS = ["sample_cov", "ledoit_wolf", "glasso", "nuts", "gibbs", "advi_mf", "advi_lr"]
 
 
 def _load_config(manifest_path: Path, config_id: int) -> dict:

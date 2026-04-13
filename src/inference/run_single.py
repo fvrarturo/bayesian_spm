@@ -38,13 +38,13 @@ import numpy as np
 # Public configuration
 # ======================================================================
 
-DEFAULT_NUTS_TIMEOUT_SECONDS = 14_400  # 4 hours
-DEFAULT_ADVI_TIMEOUT_SECONDS = 7_200   # 2 hours
+DEFAULT_NUTS_TIMEOUT_SECONDS = 42_000  # 11h40m (leaves 20 min buffer under 12h wall)
+DEFAULT_ADVI_TIMEOUT_SECONDS = 20_000  # ~5.5h (leaves buffer under 6h wall)
 DEFAULT_FREQ_TIMEOUT_SECONDS = 1_800   # 30 minutes
 DEFAULT_MAX_SAVED_SAMPLES = 5_000      # cap on posterior-sample array length
 
 # Methods that produce posterior samples (i.e. Bayesian).
-BAYESIAN_METHODS = ("nuts", "advi_mf", "advi_fr")
+BAYESIAN_METHODS = ("nuts", "gibbs", "advi_mf", "advi_fr", "advi_lr")
 
 # Full-rank ADVI fallback threshold.  Above this latent dimension, we
 # auto-fall-back to low-rank to keep memory manageable.
@@ -723,13 +723,57 @@ def _run_sample_cov(Y, p, T, timeout_seconds=None, rng_seed=0, **kwargs):
 
 
 # ======================================================================
+# Method: Gibbs (Li et al. 2019)
+# ======================================================================
+
+def _run_gibbs(Y, p, T, timeout_seconds=None, rng_seed=0, **kwargs):
+    """Wrap the Li et al. Gibbs sampler and compute kappa samples."""
+    from src.inference.gibbs_runner import run_gibbs
+    from src.evaluation.shrinkage import compute_kappa_samples
+
+    gibbs_result = _run_with_timeout(
+        run_gibbs,
+        timeout_seconds,
+        Y=Y,
+        p=p,
+        rng_seed=rng_seed,
+        **{k: v for k, v in kwargs.items()
+           if k in ("n_burnin", "n_samples", "n_thinning", "max_rejection")},
+    )
+
+    omega_hat = gibbs_result["omega_hat"]
+    omega_samples = np.asarray(gibbs_result["omega_samples"])
+    tau_sq = np.asarray(gibbs_result["tau_sq_samples"])
+    lambda_sq = np.asarray(gibbs_result["lambda_sq_samples"])
+
+    # Convert tau_sq → tau (square root) for kappa computation:
+    # kappa = 1 / (1 + lambda^2 * tau^2) = 1 / (1 + lambda_sq * tau_sq)
+    kappa_samples = 1.0 / (1.0 + lambda_sq * tau_sq[:, None])
+
+    return {
+        "status": "success",
+        "omega_hat": omega_hat,
+        "omega_samples": omega_samples,
+        "tau_samples": np.sqrt(np.maximum(tau_sq, 0)),
+        "lambda_samples": np.sqrt(np.maximum(lambda_sq, 0)),
+        "omega_diag_samples": np.array([
+            np.diag(omega_samples[s]) for s in range(omega_samples.shape[0])
+        ]),
+        "kappa_samples": kappa_samples,
+        "diagnostics": gibbs_result["diagnostics"],
+    }
+
+
+# ======================================================================
 # Dispatcher
 # ======================================================================
 
 _METHOD_DISPATCH: Dict[str, Callable[..., dict]] = {
     "nuts": _run_nuts,
+    "gibbs": _run_gibbs,
     "advi_mf": lambda Y, p, T, **kw: _run_advi(Y, p, T, guide_type="mean_field", **kw),
     "advi_fr": lambda Y, p, T, **kw: _run_advi(Y, p, T, guide_type="full_rank", **kw),
+    "advi_lr": lambda Y, p, T, **kw: _run_advi(Y, p, T, guide_type="low_rank", **kw),
     "glasso": _run_glasso,
     "ledoit_wolf": _run_ledoit_wolf,
     "sample_cov": _run_sample_cov,
@@ -750,7 +794,8 @@ def run_inference(
     Parameters
     ----------
     method : str
-        One of ``nuts, advi_mf, advi_fr, glasso, ledoit_wolf, sample_cov``.
+        One of ``nuts, gibbs, advi_mf, advi_fr, advi_lr, glasso,
+        ledoit_wolf, sample_cov``.
     data_dir : Path
         Seed directory from WORK1 containing ``Y.npy``, ``omega_true.npy``,
         ``sigma_true.npy``, and ``metadata.json``.

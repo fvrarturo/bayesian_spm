@@ -227,3 +227,175 @@ class TestAdviMfSmoke:
         assert (out / "omega_hat.npy").exists()
         assert (out / "elbo_trace.npy").exists()
         assert diag["final_elbo"] is not None
+
+
+# ======================================================================
+# Gibbs sampler tests (always run — pure NumPy, no JAX needed)
+# ======================================================================
+
+class TestGibbsSmoke:
+    def test_gibbs_produces_all_outputs(self, tiny_seed_dir, tmp_path):
+        """Gibbs sampler on p=5 should succeed and produce all output files."""
+        seed_dir, Omega_true, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        diag = run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=200, n_samples=500, n_thinning=1,
+        )
+        assert diag["status"] == "success"
+        assert (out / "omega_hat.npy").exists()
+        assert (out / "omega_samples.npy").exists()
+        assert (out / "kappa_samples.npy").exists()
+        assert (out / "tau_samples.npy").exists()
+        assert (out / "lambda_samples.npy").exists()
+        assert (out / "diagnostics.json").exists()
+
+    def test_gibbs_omega_is_pd(self, tiny_seed_dir, tmp_path):
+        """Every posterior sample of Omega should be positive definite."""
+        seed_dir, _, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=100, n_samples=50, n_thinning=1,
+        )
+        omega_samples = np.load(out / "omega_samples.npy")
+        for s in range(omega_samples.shape[0]):
+            eigs = np.linalg.eigvalsh(omega_samples[s].astype(np.float64))
+            assert eigs.min() > 0, f"Sample {s} is not PD: min_eig={eigs.min()}"
+
+    def test_gibbs_omega_is_symmetric(self, tiny_seed_dir, tmp_path):
+        """Every posterior sample should be symmetric."""
+        seed_dir, _, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=100, n_samples=50, n_thinning=1,
+        )
+        omega_samples = np.load(out / "omega_samples.npy")
+        for s in range(omega_samples.shape[0]):
+            O = omega_samples[s].astype(np.float64)
+            np.testing.assert_allclose(O, O.T, atol=1e-10)
+
+    def test_gibbs_kappa_in_unit_interval(self, tiny_seed_dir, tmp_path):
+        """Kappa samples should all be in [0, 1]."""
+        seed_dir, _, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=100, n_samples=200, n_thinning=1,
+        )
+        kappa = np.load(out / "kappa_samples.npy")
+        assert np.all(kappa >= 0)
+        assert np.all(kappa <= 1)
+
+    def test_gibbs_diagnostics_fields(self, tiny_seed_dir, tmp_path):
+        """Gibbs diagnostics.json should contain the expected fields."""
+        seed_dir, _, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=100, n_samples=200, n_thinning=1,
+        )
+        with open(out / "diagnostics.json") as f:
+            diag = json.load(f)
+        assert diag["method"] == "gibbs"
+        assert "n_burnin" in diag
+        assert "n_samples" in diag
+        assert "min_ess_omega" in diag
+        assert "min_ess_tau" in diag
+        assert "geweke_p_value_tau" in diag
+        assert "mean_rejection_rate_per_column" in diag
+
+    def test_gibbs_evaluate_produces_metrics(self, tiny_seed_dir, tmp_path):
+        """Evaluation should work on Gibbs output."""
+        from src.evaluation.evaluate_single import evaluate
+
+        seed_dir, _, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=100, n_samples=200, n_thinning=1,
+        )
+        metrics = evaluate("gibbs", seed_dir, out)
+        assert (out / "metrics.json").exists()
+        assert metrics["status"] == "success"
+        assert metrics["steins_loss"] is not None
+        assert metrics["frobenius_loss"] is not None
+        # Gibbs is Bayesian, so coverage and bimodality should be present
+        assert metrics.get("coverage_95") is not None
+        assert metrics.get("bimodality_coefficient_kappa") is not None
+
+
+# ======================================================================
+# PSIS diagnostic tests
+# ======================================================================
+
+class TestPSIS:
+    def test_khat_identical_distributions(self):
+        """Uniform log-weights → khat ≈ 0 (perfect match)."""
+        from src.evaluation.psis import compute_psis_khat
+
+        rng = np.random.default_rng(0)
+        log_weights = rng.normal(0, 0.01, size=500)  # near-uniform
+        result = compute_psis_khat(log_weights)
+        assert result["psis_khat"] is not None
+        assert result["psis_khat"] < 0.5  # should be "good"
+
+    def test_khat_heavy_tails(self):
+        """Very heavy-tailed log-weights → khat > 0.5."""
+        from src.evaluation.psis import compute_psis_khat
+
+        rng = np.random.default_rng(0)
+        # Cauchy draws have very heavy tails
+        log_weights = rng.standard_cauchy(size=500)
+        result = compute_psis_khat(log_weights)
+        assert result["psis_khat"] is not None
+        assert result["psis_khat"] > 0.3  # at least marginal
+
+    def test_interpret_khat(self):
+        from src.evaluation.psis import interpret_khat
+
+        assert interpret_khat(0.3) == "good"
+        assert interpret_khat(0.6) == "marginal"
+        assert interpret_khat(0.8) == "bad"
+        assert interpret_khat(float("nan")) == "unknown"
+
+
+# ======================================================================
+# Gibbs runner unit test (low-level)
+# ======================================================================
+
+class TestGibbsRunnerDirect:
+    def test_run_gibbs_returns_correct_shapes(self):
+        """Direct call to run_gibbs with minimal budget."""
+        from src.inference.gibbs_runner import run_gibbs
+
+        p = 5
+        T = 200
+        Omega, _, _ = sparse_omega_erdos_renyi(p, 0.2, seed=0)
+        Y = sample_data_from_omega(Omega, T=T, seed=1)
+
+        result = run_gibbs(
+            Y, p=p, n_burnin=50, n_samples=100, n_thinning=1, rng_seed=42,
+        )
+        assert result["omega_hat"].shape == (p, p)
+        assert result["omega_samples"].shape == (100, p, p)
+        assert result["tau_sq_samples"].shape == (100,)
+        n_offdiag = p * (p - 1) // 2
+        assert result["lambda_sq_samples"].shape == (100, n_offdiag)
+        assert result["diagnostics"]["n_burnin"] == 50
+        assert result["diagnostics"]["n_samples"] == 100
+
+    def test_run_gibbs_tau_positive(self):
+        from src.inference.gibbs_runner import run_gibbs
+
+        p = 4
+        T = 100
+        Omega, _, _ = sparse_omega_erdos_renyi(p, 0.3, seed=7)
+        Y = sample_data_from_omega(Omega, T=T, seed=8)
+
+        result = run_gibbs(
+            Y, p=p, n_burnin=50, n_samples=50, n_thinning=1, rng_seed=0,
+        )
+        assert np.all(result["tau_sq_samples"] > 0)
+        assert np.all(result["lambda_sq_samples"] > 0)

@@ -4,7 +4,7 @@
 #SBATCH --partition=mit_normal
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
-#SBATCH --time=03:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=logs/advi_%A_%a.out
 #SBATCH --error=logs/advi_%A_%a.err
 

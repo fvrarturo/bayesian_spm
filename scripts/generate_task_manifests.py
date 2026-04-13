@@ -30,8 +30,9 @@ if str(REPO_ROOT) not in sys.path:
 DEFAULT_CONFIG_MANIFEST = REPO_ROOT / "data" / "synthetic" / "configs" / "config_manifest.json"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "results" / "task_manifests"
 
-ALL_ADVI_METHODS = ["advi_mf", "advi_fr"]
+ALL_ADVI_METHODS = ["advi_mf", "advi_lr"]
 ALL_NUTS_METHODS = ["nuts"]
+ALL_GIBBS_METHODS = ["gibbs"]
 ALL_FREQ_METHODS = ["sample_cov", "ledoit_wolf", "glasso"]
 
 
@@ -50,10 +51,10 @@ def _subset_tier1(config: dict) -> bool:
 
 
 def _subset_tier2(config: dict) -> bool:
-    """Core results: p=50, all gammas, both graphs, s in {0.10, 0.30}."""
+    """Core results: all p, all gammas, ER only, s in {0.05, 0.10, 0.30}."""
     return (
-        config["p"] == 50
-        and config["sparsity"] in (0.10, 0.30)
+        config["graph"] == "erdos_renyi"
+        and config["sparsity"] in (0.05, 0.10, 0.30)
     )
 
 
@@ -182,9 +183,20 @@ def main():
         json.dump(nuts_tasks, f, indent=2)
     print(f"nuts:  {len(nuts_tasks):>5} tasks   -> {nuts_path}")
 
+    # --- Gibbs manifest (task per config × seed) ---
+    gibbs_tasks = _expand(configs, ALL_GIBBS_METHODS, args.tier)
+    gibbs_path = args.output_dir / f"gibbs{suffix}.json"
+    with open(gibbs_path, "w") as f:
+        json.dump(gibbs_tasks, f, indent=2)
+    print(f"gibbs: {len(gibbs_tasks):>5} tasks   -> {gibbs_path}")
+
     print()
-    print(f"Tier {args.tier}: Use --array=0-{len(freq_tasks)-1} for freq, "
-          f"--array=0-{len(advi_tasks)-1} for advi, --array=0-{len(nuts_tasks)-1} for nuts.")
+    print(
+        f"Tier {args.tier}: Use --array=0-{len(freq_tasks)-1} for freq, "
+        f"--array=0-{len(advi_tasks)-1} for advi, "
+        f"--array=0-{len(nuts_tasks)-1} for nuts, "
+        f"--array=0-{len(gibbs_tasks)-1} for gibbs."
+    )
 
 
 if __name__ == "__main__":

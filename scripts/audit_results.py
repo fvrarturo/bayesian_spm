@@ -41,7 +41,7 @@ from src.utils.configs import dir_name_seed  # noqa: E402
 DEFAULT_MANIFEST = REPO_ROOT / "data" / "synthetic" / "configs" / "config_manifest.json"
 DEFAULT_RESULTS_ROOT = REPO_ROOT / "results" / "synthetic"
 
-ALL_METHODS = ["nuts", "advi_mf", "advi_fr", "glasso", "ledoit_wolf", "sample_cov"]
+ALL_METHODS = ["nuts", "gibbs", "advi_mf", "advi_fr", "advi_lr", "glasso", "ledoit_wolf", "sample_cov"]
 
 
 def _audit_one(
