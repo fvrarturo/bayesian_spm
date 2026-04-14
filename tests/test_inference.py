@@ -21,6 +21,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.inference.run_single import run_inference  # noqa: E402
+from src.utils.io import load_samples, samples_exist  # noqa: E402
 from src.utils.matrix_utils import (  # noqa: E402
     sample_data_from_omega,
     sparse_omega_erdos_renyi,
@@ -204,8 +205,8 @@ class TestNutsSmoke:
         )
         assert diag["status"] == "success"
         assert (out / "omega_hat.npy").exists()
-        assert (out / "omega_samples.npy").exists()
-        assert (out / "kappa_samples.npy").exists()
+        assert samples_exist(out, "omega_samples")
+        assert samples_exist(out, "kappa_samples")
         assert diag["max_rhat"] is not None
         # R-hat should be in a sane range even with a tiny budget.
         assert diag["max_rhat"] < 1.20
@@ -225,7 +226,7 @@ class TestAdviMfSmoke:
         )
         assert diag["status"] == "success"
         assert (out / "omega_hat.npy").exists()
-        assert (out / "elbo_trace.npy").exists()
+        assert samples_exist(out, "elbo_trace")
         assert diag["final_elbo"] is not None
 
 
@@ -244,10 +245,10 @@ class TestGibbsSmoke:
         )
         assert diag["status"] == "success"
         assert (out / "omega_hat.npy").exists()
-        assert (out / "omega_samples.npy").exists()
-        assert (out / "kappa_samples.npy").exists()
-        assert (out / "tau_samples.npy").exists()
-        assert (out / "lambda_samples.npy").exists()
+        assert samples_exist(out, "omega_samples")
+        assert samples_exist(out, "kappa_samples")
+        assert samples_exist(out, "tau_samples")
+        assert samples_exist(out, "lambda_samples")
         assert (out / "diagnostics.json").exists()
 
     def test_gibbs_omega_is_pd(self, tiny_seed_dir, tmp_path):
@@ -258,7 +259,7 @@ class TestGibbsSmoke:
             "gibbs", seed_dir, out,
             n_burnin=100, n_samples=50, n_thinning=1,
         )
-        omega_samples = np.load(out / "omega_samples.npy")
+        omega_samples = load_samples(out, "omega_samples")
         for s in range(omega_samples.shape[0]):
             eigs = np.linalg.eigvalsh(omega_samples[s].astype(np.float64))
             assert eigs.min() > 0, f"Sample {s} is not PD: min_eig={eigs.min()}"
@@ -271,7 +272,7 @@ class TestGibbsSmoke:
             "gibbs", seed_dir, out,
             n_burnin=100, n_samples=50, n_thinning=1,
         )
-        omega_samples = np.load(out / "omega_samples.npy")
+        omega_samples = load_samples(out, "omega_samples")
         for s in range(omega_samples.shape[0]):
             O = omega_samples[s].astype(np.float64)
             np.testing.assert_allclose(O, O.T, atol=1e-10)
@@ -284,7 +285,7 @@ class TestGibbsSmoke:
             "gibbs", seed_dir, out,
             n_burnin=100, n_samples=200, n_thinning=1,
         )
-        kappa = np.load(out / "kappa_samples.npy")
+        kappa = load_samples(out, "kappa_samples")
         assert np.all(kappa >= 0)
         assert np.all(kappa <= 1)
 

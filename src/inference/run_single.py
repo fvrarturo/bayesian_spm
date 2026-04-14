@@ -33,6 +33,8 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
+from src.utils.io import save_samples_compressed
+
 
 # ======================================================================
 # Public configuration
@@ -161,29 +163,29 @@ def _save_results_atomic(
                 np.asarray(omega_hat, dtype=np.float64),
             )
 
-        # 3. Bayesian: posterior samples.  Thin to cap disk usage.
-        #    Raw parameter samples stay float64; the bulky omega_samples
-        #    is stored in float32 to halve the footprint.
+        # 3. Bayesian: posterior samples.  Thin to cap disk usage, then
+        #    store as zlib-compressed .npz.  All stochastic MCMC draws
+        #    are downcast to float32 — the float64 precision is pure
+        #    Monte Carlo noise (sampler error ~ 1/sqrt(N) >> 1e-7).
         sample_dtypes = {
             "omega_samples": np.float32,
-            "tau_samples": np.float64,
-            "lambda_samples": np.float64,
-            "omega_diag_samples": np.float64,
-            "kappa_samples": np.float64,
+            "tau_samples": np.float32,
+            "lambda_samples": np.float32,
+            "omega_diag_samples": np.float32,
+            "kappa_samples": np.float32,
         }
         for key, dtype in sample_dtypes.items():
             arr = result.get(key)
             if arr is None:
                 continue
-            thinned = _thin(arr, max_saved_samples).astype(dtype, copy=False)
-            np.save(tmp_dir / f"{key}.npy", thinned)
+            thinned = _thin(arr, max_saved_samples)
+            save_samples_compressed(tmp_dir / f"{key}.npz", thinned, dtype=dtype)
 
         # 4. ADVI: ELBO trace (negative-ELBO losses).
         elbo = result.get("elbo_trace")
         if elbo is not None:
-            np.save(
-                tmp_dir / "elbo_trace.npy",
-                np.asarray(elbo, dtype=np.float32),
+            save_samples_compressed(
+                tmp_dir / "elbo_trace.npz", elbo, dtype=np.float32,
             )
 
         # 5. Sample-cov / frequentist extras.

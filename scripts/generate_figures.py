@@ -135,15 +135,18 @@ def plot_shrinkage_profile_comparison(
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    nuts_kappa_path = _method_dir(config, seed, "nuts", results_root) / "kappa_samples.npy"
-    advi_kappa_path = _method_dir(config, seed, "advi_mf", results_root) / "kappa_samples.npy"
-    if not nuts_kappa_path.exists() or not advi_kappa_path.exists():
+    from src.utils.io import load_samples, samples_exist
+
+    nuts_dir = _method_dir(config, seed, "nuts", results_root)
+    advi_dir = _method_dir(config, seed, "advi_mf", results_root)
+    if not samples_exist(nuts_dir, "kappa_samples") or not samples_exist(advi_dir, "kappa_samples"):
         print(f"[shrinkage_profile] missing kappa samples; skipping "
-              f"(nuts={nuts_kappa_path.exists()}, advi={advi_kappa_path.exists()})")
+              f"(nuts={samples_exist(nuts_dir, 'kappa_samples')}, "
+              f"advi={samples_exist(advi_dir, 'kappa_samples')})")
         return
 
-    nuts_k = np.load(nuts_kappa_path).mean(axis=0)  # (n_offdiag,)
-    advi_k = np.load(advi_kappa_path).mean(axis=0)
+    nuts_k = load_samples(nuts_dir, "kappa_samples").mean(axis=0)  # (n_offdiag,)
+    advi_k = load_samples(advi_dir, "kappa_samples").mean(axis=0)
 
     from src.evaluation.shrinkage import bimodality_coefficient
     from src.utils.plotting import plot_shrinkage_profile

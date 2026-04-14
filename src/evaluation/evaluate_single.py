@@ -42,6 +42,7 @@ from src.evaluation.shrinkage import (
     shrinkage_profile_summary,
     shrinkage_wasserstein,
 )
+from src.utils.io import load_samples, samples_exist
 
 # The canonical list of numeric metric keys that every metrics.json carries.
 # Used to build null-filled metrics dicts for failed runs.
@@ -133,10 +134,10 @@ def _compute_bayesian_extras(
     if method == "nuts":
         metrics["shrinkage_wasserstein_vs_nuts"] = None
     else:
-        nuts_kappa_path = results_dir.parent / "nuts" / "kappa_samples.npy"
-        if kappa_samples is not None and nuts_kappa_path.exists():
+        nuts_dir = results_dir.parent / "nuts"
+        if kappa_samples is not None and samples_exist(nuts_dir, "kappa_samples"):
             try:
-                nuts_kappa_samples = np.load(nuts_kappa_path)
+                nuts_kappa_samples = load_samples(nuts_dir, "kappa_samples")
                 nuts_kappa_hat = compute_kappa_hat(nuts_kappa_samples)
                 this_kappa_hat = compute_kappa_hat(kappa_samples)
                 metrics["shrinkage_wasserstein_vs_nuts"] = shrinkage_wasserstein(
@@ -164,8 +165,9 @@ def evaluate(
         WORK1 seed directory (contains ``omega_true.npy``, ``metadata.json``).
     results_dir : Path
         WORK2 method directory (contains ``diagnostics.json`` and
-        ``omega_hat.npy``, optionally ``omega_samples.npy``,
-        ``kappa_samples.npy``).
+        ``omega_hat.npy``, optionally ``omega_samples.npz`` /
+        ``kappa_samples.npz`` — ``.npy`` is also accepted for
+        backward compatibility with pre-compression runs).
     true_threshold : float
         Threshold below which ground-truth entries are treated as zero
         when computing sparsity metrics.
@@ -239,15 +241,13 @@ def evaluate(
     metrics["threshold_used"] = threshold
 
     # --- 7. Bayesian-only extras ---
-    omega_samples_path = results_dir / "omega_samples.npy"
-    kappa_samples_path = results_dir / "kappa_samples.npy"
-    has_samples = omega_samples_path.exists()
+    has_samples = samples_exist(results_dir, "omega_samples")
 
     if has_samples:
-        omega_samples = np.load(omega_samples_path).astype(np.float64)
+        omega_samples = load_samples(results_dir, "omega_samples").astype(np.float64)
         kappa_samples = (
-            np.load(kappa_samples_path).astype(np.float64)
-            if kappa_samples_path.exists()
+            load_samples(results_dir, "kappa_samples").astype(np.float64)
+            if samples_exist(results_dir, "kappa_samples")
             else None
         )
         _compute_bayesian_extras(

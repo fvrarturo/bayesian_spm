@@ -13,7 +13,9 @@
 #
 # Each task processes ONE (config, seed) pair.  NUTS is the slowest
 # and most memory-intensive method in the pipeline; wall-time budget is
-# 4 hours and memory is 16 GB.  Many p=100 tasks will hit the wall and
+# 12 hours and memory is 16 GB.  Internal inference timeout is taken
+# from DEFAULT_NUTS_TIMEOUT_SECONDS (11h40m, leaving a 20-minute buffer
+# under the SLURM wall).  Many p=100 tasks will still hit the wall and
 # report status="timeout" — this is an expected finding, not a bug.
 #
 # Full-grid size: 84 configs × 20 seeds = 1,680 tasks.
@@ -64,7 +66,6 @@ $PYTHON scripts/run_inference_single.py \
     --data-root data/synthetic \
     --results-root results/synthetic \
     --config-manifest data/synthetic/configs/config_manifest.json \
-    --timeout-seconds 14400 \
     --log-level INFO
 
 echo "=== Task ${SLURM_ARRAY_TASK_ID:-0} finished ==="
