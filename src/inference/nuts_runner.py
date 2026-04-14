@@ -21,16 +21,16 @@ import jax
 import jax.numpy as jnp
 from numpyro.infer import MCMC, NUTS
 
-# ``init_to_median`` lives in different submodules across NumPyro versions.
-# Try the top-level ``numpyro.infer`` first, then fall back to the internal
-# ``numpyro.infer.initialization`` module used by older releases.
+# ``init_to_median`` and ``init_to_value`` live in different submodules
+# across NumPyro versions.  Try the top-level ``numpyro.infer`` first,
+# then fall back to the internal ``numpyro.infer.initialization``.
 try:
-    from numpyro.infer import init_to_median  # NumPyro >= 0.7
+    from numpyro.infer import init_to_median, init_to_value  # NumPyro >= 0.7
 except ImportError:  # pragma: no cover
     try:
-        from numpyro.infer.initialization import init_to_median
+        from numpyro.infer.initialization import init_to_median, init_to_value
     except ImportError:  # pragma: no cover
-        from numpyro.infer.util import init_to_median  # very old fallback
+        from numpyro.infer.util import init_to_median, init_to_value
 
 
 def run_nuts(

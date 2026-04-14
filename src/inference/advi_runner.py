@@ -43,15 +43,15 @@ def _make_optimizer(learning_rate):
         return _AdamOptimizer(step_size=learning_rate, clip_norm=_CLIP_NORM)
     return _AdamOptimizer(step_size=learning_rate)
 
-# Import ``init_to_median`` with a small fallback chain for older
-# NumPyro installs.  Matches the fallback used in ``nuts_runner.py``.
+# Import ``init_to_median`` and ``init_to_value`` with a fallback chain
+# for older NumPyro installs.  Matches the fallback used in ``nuts_runner``.
 try:
-    from numpyro.infer import init_to_median  # NumPyro >= 0.7
+    from numpyro.infer import init_to_median, init_to_value  # NumPyro >= 0.7
 except ImportError:  # pragma: no cover
     try:
-        from numpyro.infer.initialization import init_to_median
+        from numpyro.infer.initialization import init_to_median, init_to_value
     except ImportError:  # pragma: no cover
-        from numpyro.infer.util import init_to_median  # very old fallback
+        from numpyro.infer.util import init_to_median, init_to_value
 
 
 GUIDE_MAP = {
@@ -93,6 +93,7 @@ def run_advi(
     low_rank=None,
     init_scale=0.01,
     num_particles=1,
+    init_values=None,
 ):
     """Run ADVI on the graphical horseshoe model.
 
@@ -161,13 +162,20 @@ def run_advi(
     for seed_idx in range(num_seeds):
         rng_key = jax.random.PRNGKey(rng_seed + seed_idx)
 
-        # Fresh guide per restart.  init_to_median uses 15 random samples
-        # to estimate the median per latent site, so each restart gets
-        # slightly different starting variational parameters.
+        # Fresh guide per restart.
+        # When ``init_values`` is supplied (recommended for high-p), use
+        # ``init_to_value`` with hand-picked PD-safe starting parameters.
+        # Otherwise fall back to ``init_to_median(num_samples=15)`` which
+        # works for p≤50 but can fail at p=100.
+        if init_values is not None:
+            init_loc = init_to_value(values=init_values)
+        else:
+            init_loc = init_to_median(num_samples=15)
+
         guide = _build_guide(
             guide_cls,
             model,
-            init_loc_fn=init_to_median(num_samples=15),
+            init_loc_fn=init_loc,
             init_scale=init_scale,
             low_rank=low_rank,
         )

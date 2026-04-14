@@ -102,7 +102,10 @@ def _build_dirs(config: dict, seed: int, method: str,
 def _default_timeout_for_method(method: str) -> int:
     if method == "nuts":
         return DEFAULT_NUTS_TIMEOUT_SECONDS
-    if method in ("advi_mf", "advi_fr"):
+    if method == "gibbs":
+        # Same budget as NUTS: p=100 Gibbs can take 1–3 hours per task.
+        return DEFAULT_NUTS_TIMEOUT_SECONDS
+    if method in ("advi_mf", "advi_fr", "advi_lr"):
         return DEFAULT_ADVI_TIMEOUT_SECONDS
     return DEFAULT_FREQ_TIMEOUT_SECONDS
 

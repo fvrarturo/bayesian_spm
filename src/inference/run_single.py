@@ -218,6 +218,34 @@ def _save_results_atomic(
 # Model wrapper (lets us swap ncp without touching the base model)
 # ======================================================================
 
+def _horseshoe_init_values(p, ncp=True):
+    """Hand-picked PD-safe starting values for the graphical horseshoe.
+
+    At p=100, ``init_to_median(num_samples=15)`` fails to find a valid
+    starting point about 30% of the time because (a) each latent site's
+    median is estimated from only 15 samples, (b) the HalfCauchy's heavy
+    tail gives a noisy median, and (c) with 10,000+ latent dimensions,
+    even one outlier is enough to push Omega out of the PD cone.
+
+    Passing explicit values bypasses the sampling entirely:
+        z=0, λ=1, τ=1, ω_ii=5
+        ⟹ ω_{ij} = z·λ·τ = 0 for all i<j
+        ⟹ Ω = 5·I (trivially PD, finite log-density)
+    """
+    import numpy as np
+    n_offdiag = p * (p - 1) // 2
+    values = {
+        "tau": np.array(1.0),
+        "lambdas": np.ones(n_offdiag),
+        "omega_diag": np.ones(p) * 5.0,
+    }
+    if ncp:
+        values["z"] = np.zeros(n_offdiag)
+    else:
+        values["omega_offdiag"] = np.zeros(n_offdiag)
+    return values
+
+
 def _make_horseshoe_model(ncp=True, tau_scale=1.0, diag_prior="halfnormal"):
     """Return a closure over the graphical-horseshoe model.
 
@@ -310,7 +338,7 @@ def _run_nuts_core(Y, p, T, rng_seed, nuts_params, ncp):
     """Run NUTS with the given hyperparameters and parameterization."""
     import numpyro
     from numpyro.diagnostics import summary as nuts_summary
-    from src.inference.nuts_runner import run_nuts
+    from src.inference.nuts_runner import init_to_value, run_nuts
 
     # Defensive: disable global argument validation so NumPyro never
     # tries to check precision_matrix positive-definiteness at Python
@@ -321,6 +349,14 @@ def _run_nuts_core(Y, p, T, rng_seed, nuts_params, ncp):
     except Exception:
         pass
 
+    # Use explicit PD-safe init values.  At p=100 the default
+    # init_to_median(num_samples=15) fails ~30% of the time because the
+    # 15-sample median of HalfCauchy draws is noisy enough to land
+    # outside the PD cone when all p(p-1)/2 latents are combined into
+    # Omega.  init_to_value(z=0, lambda=1, tau=1, omega_diag=5)
+    # guarantees Omega = 5*I on the first step.
+    init_strategy = init_to_value(values=_horseshoe_init_values(p, ncp=ncp))
+
     model = _make_horseshoe_model(ncp=ncp)
     mcmc = run_nuts(
         model=model,
@@ -329,6 +365,7 @@ def _run_nuts_core(Y, p, T, rng_seed, nuts_params, ncp):
         rng_seed=rng_seed,
         progress_bar=False,
         extra_fields=("diverging",),
+        init_strategy=init_strategy,
         **nuts_params,
     )
 
@@ -469,8 +506,12 @@ def _run_advi_core(Y, p, T, guide_type, advi_kwargs, rng_seed):
     except Exception:
         pass
 
-    # Separate guide-specific kwargs (low_rank) from run_advi's own.
+    # Separate guide-specific kwargs from run_advi's own.
     low_rank = advi_kwargs.pop("low_rank", None)
+
+    # PD-safe explicit init values (avoids the p=100
+    # "Cannot find valid initial parameters" failure).
+    init_values = _horseshoe_init_values(p, ncp=True)
 
     model = _make_horseshoe_model(ncp=True)
     advi_result = run_advi(
@@ -480,6 +521,7 @@ def _run_advi_core(Y, p, T, guide_type, advi_kwargs, rng_seed):
         guide_type=guide_type,
         rng_seed=rng_seed,
         low_rank=low_rank,
+        init_values=init_values,
         **advi_kwargs,
     )
     return advi_result
