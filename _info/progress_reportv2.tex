@@ -1,0 +1,480 @@
+\documentclass[10pt,conference,compsoc]{IEEEtran}
+
+% ── Core packages ──
+\usepackage[utf8]{inputenc}
+\usepackage{titlesec}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.7in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{graphicx,xcolor,hyperref}
+\usepackage{algorithm,algpseudocode}
+\usepackage{booktabs,enumitem,caption,subcaption}
+
+\hypersetup{colorlinks=true,linkcolor=blue!70!black,citecolor=green!50!black,urlcolor=blue!60!black}
+\setlist{nosep}
+
+% ── Macros (Unchanged) ──
+\newcommand{\R}{\mathbb{R}} \newcommand{\E}{\mathbb{E}} \newcommand{\Var}{\operatorname{Var}}
+\newcommand{\tr}{\operatorname{tr}} \newcommand{\KL}{\operatorname{KL}} \newcommand{\ELBO}{\operatorname{ELBO}}
+\newcommand{\Normal}{\mathcal{N}} \newcommand{\HalfCauchy}{\mathrm{C}^{+}} \newcommand{\InvGamma}{\mathrm{IG}}
+\newcommand{\Spp}{\mathcal{S}^{+}_p} \newcommand{\bOmega}{\bm{\Omega}} \newcommand{\bSigma}{\bm{\Sigma}}
+
+% ── ULTRA COMPRESSED TITLE ──
+\title{\large \textbf{Sparse Bayesian Precision Matrix Estimation in Equity Returns:\\MCMC vs.\ Variational Inference}\vspace{-0.5em}}
+
+\author{
+    \small A. Favara, F. V.\ Cortesi, N. Bernardini --- \textit{Massachusetts Institute of Technology (6.7830), Spring 2026}\vspace{-5em}
+}
+
+\begin{document}
+% \titlespacing*{command}{left}{before}{after}
+% Adjust these values (e.g., 1ex to 0.5ex) to get it even tighter
+
+\titlespacing*{\section}{0pt}{1.2ex}{0.6ex}
+\titlespacing*{\subsection}{0pt}{1.0ex}{0.5ex}
+\titlespacing*{\subsubsection}{0pt}{0.8ex}{0.4ex}
+\titleformat{\paragraph}[runin]{\normalfont\bfseries}{}{0pt}{}
+\titlespacing{\paragraph}{0pt}{0.5ex}{1em}
+
+\maketitle
+\setlength{\parskip}{0pt}
+
+%======================================================================
+\section{Introduction}
+%======================================================================
+
+In multivariate statistics the precision matrix $\bOmega = \bSigma^{-1} \in \Spp$ encodes the conditional independence structure of a random vector: for $\bm{y} \sim \Normal(\bm{0}, \bSigma)$,
+\begin{equation}
+  \omega_{ij} = 0 \;\;\Longleftrightarrow\;\; y_i \perp y_j \mid \bm{y}_{\setminus\{i,j\}}.
+  \label{eq:cond-indep}
+\end{equation}
+Estimating $\bOmega$ from $T$ observations of a $p$-dimensional return vector is challenging when the concentration ratio $\gamma = p/T$ is large: the sample covariance becomes ill-conditioned and naive inversion fails. In finance, $p = 50$--$500$ stocks observed over $T = 250$ trading days (one year) is typical, placing $\gamma$ squarely in the regime where regularisation is essential.
+
+We adopt the \textbf{graphical horseshoe} prior of Li, Craig, and Bhadra~\cite{li2019}, which places element-wise horseshoe shrinkage priors on $\bOmega$'s off-diagonal entries. Our research question is:
+\begin{quote}
+\textit{How does the quality of variational inference compare to MCMC for the graphical horseshoe, and how does this comparison change as $p$ increases into regimes where estimation is difficult?}
+\end{quote}
+
+We compare \textbf{seven inference methods}---two MCMC samplers (NUTS and a model-specific Gibbs sampler), two variational methods (mean-field and low-rank ADVI), and three frequentist baselines (graphical lasso, Ledoit--Wolf, sample covariance)---across a systematic grid of synthetic experiments varying dimension $p \in \{10, 50, 100\}$, concentration ratio $\gamma \in \{0.10, \ldots, 0.90\}$, and sparsity level $s \in \{0.05, 0.10, 0.30\}$.
+
+Our preliminary findings reveal a \textbf{dimension- and method-dependent failure mode}. At $p{=}50$, mean-field ADVI preserves the horseshoe's bimodal shrinkage with near-nominal coverage (0.96), while low-rank ADVI---counterintuitively---already fails calibration (coverage 0.39). At $p{=}100$, both variational methods collapse (coverage 0.01 / 0.10), and NUTS fails to mix in a deeper, geometric sense: 0 of 50 successful runs meet the strict convergence gate, with median $\hat{R} = 5.0$ and median bulk-ESS $= 2$ (\S\ref{sec:nuts-failure}). The model-specific Gibbs sampler of Li et al.~\cite{li2019}---with hand-derived conditionals and 100\% acceptance---is the unique Bayesian survivor at $p{=}100$: it actually \emph{outperforms} NUTS on Stein's loss at this dimension (2.86 vs.\ 3.00 at $\gamma{=}0.20$, up to 2$\times$ better at $\gamma{=}0.10$) because NUTS's non-mixed chains corrupt its posterior mean. Gibbs also maintains nominal coverage (0.99), preserves the bimodal shrinkage signature ($b = 0.90$), and converges on a single chain in ${\sim}45$~min/seed---8$\times$ faster than NUTS's 7-hour non-convergent runs.
+
+%======================================================================
+\section{Model}
+%======================================================================
+
+\subsection{The Graphical Horseshoe}
+
+Given $T$ i.i.d.\ observations $\bm{y}_k \sim \Normal(\bm{0}, \bOmega^{-1})$, the sufficient statistic for $\bOmega$ is the scatter matrix $\bm{S} = \bm{Y}^\top\bm{Y} = \sum_{k=1}^T \bm{y}_k\bm{y}_k^\top$, and the log-likelihood takes the form
+\begin{equation}
+  \ell(\bOmega) = \tfrac{T}{2}\log|\bOmega| - \tfrac{1}{2}\tr(\bm{S}\,\bOmega) - \tfrac{Tp}{2}\log(2\pi).
+  \label{eq:loglik}
+\end{equation}
+The graphical horseshoe places a global-local shrinkage hierarchy on the off-diagonal entries of $\bOmega$:
+\begin{align}
+  \tau &\sim \HalfCauchy(0, 1), \label{eq:tau}\\
+  \lambda_{ij} &\sim \HalfCauchy(0, 1), \quad \forall\; i < j, \label{eq:lam}\\
+  \omega_{ij} \mid \lambda_{ij}, \tau &\sim \Normal(0,\; \lambda_{ij}^2 \tau^2), \quad \forall\; i < j, \label{eq:offdiag}\\
+  \omega_{ii} &\sim \text{HalfNormal}(5), \quad \forall\; i, \label{eq:diag}\\
+  \bOmega &\in \Spp. \label{eq:pd}
+\end{align}
+
+The prior variance $\lambda_{ij}^2\tau^2$ couples a \textbf{global} scale $\tau$ (controlling overall sparsity) with \textbf{local} scales $\lambda_{ij}$ whose heavy tails let individual signal entries escape shrinkage even when $\tau$ is small---the two-level structure that distinguishes the horseshoe from uniformly-shrinking priors.
+
+\subsection{The Shrinkage Coefficient}
+
+The horseshoe's behaviour is most transparent through the \textbf{shrinkage coefficient}:
+\begin{equation}
+  \kappa_{ij} = \frac{1}{1 + \lambda_{ij}^2 \tau^2} \in [0,1].
+  \label{eq:kappa}
+\end{equation}
+Under the posterior, $\kappa_{ij}$ controls how much entry $(i,j)$ is shrunk toward zero. The posterior mean satisfies approximately~\cite{carvalho2010}:
+\begin{equation}
+  \E[\omega_{ij} \mid \bm{Y}] \approx (1 - \hat\kappa_{ij})\;\hat\omega_{ij}^{\text{MLE}},
+  \label{eq:shrinkage-rule}
+\end{equation}
+so $\kappa_{ij} \approx 1$ means full shrinkage (noise) and $\kappa_{ij} \approx 0$ means no shrinkage (signal). Under the horseshoe, the posterior distribution of $\{\kappa_{ij}\}$ is \textbf{bimodal}---the defining ``shrink or don't'' property. Whether each inference method preserves this bimodality is our central diagnostic; we measure it with Sarle's coefficient $b$, with $b > 5/9 \approx 0.556$ indicating bimodality.
+
+\subsection{Non-Centred Parameterisation}
+
+Direct sampling of $\omega_{ij} \sim \Normal(0, \lambda_{ij}^2\tau^2)$ creates a \textbf{funnel geometry} in $(\omega_{ij}, \log\lambda_{ij})$ space that traps gradient-based samplers: the step size needed near the tip is orders of magnitude smaller than what works in the bulk. The \textbf{non-centred parameterisation} (NCP) breaks this coupling:
+\begin{equation}
+  z_{ij} \sim \Normal(0, 1), \qquad \omega_{ij} = z_{ij} \cdot \lambda_{ij} \cdot \tau,
+  \label{eq:ncp}
+\end{equation}
+making $z_{ij}$ and $\lambda_{ij}$ \emph{a priori} independent and transforming the funnel into a rectangular geometry. Without NCP, NUTS produces $>$50\% divergences even at $p=10$.
+
+%======================================================================
+\section{Inference Methods}
+%======================================================================
+
+\subsection{NUTS: Generic Gradient MCMC}
+
+The No-U-Turn Sampler~\cite{hoffman2014} augments $\pi(\bm{\theta}) = p(\bm{\theta}\mid\bm{Y})$ with momentum $\bm{r}\sim\Normal(\bm{0},\bm{M})$ and simulates the Hamiltonian $H(\bm{\theta},\bm{r}) = -\log\pi(\bm{\theta}) + \tfrac12\bm{r}^\top\bm{M}^{-1}\bm{r}$ via the leapfrog integrator; the integration length is chosen adaptively by building a binary tree until a U-turn is detected. Each step requires $\nabla_{\bm{\theta}}\log\pi$, dominated by an $O(p^3)$ Cholesky of $\bOmega$. We run 4 chains $\times$ (2{,}000 warmup + 5{,}000 sampling) in NumPyro~\cite{phan2019} with target acceptance $\delta = 0.90$ (for $p=10$ we use 1{,}000 warmup + 2{,}000 samples at $\delta=0.95$).
+
+\paragraph{Convergence.} A run converges only if $\hat{R} < 1.01$ across all sites, bulk ESS $> 400$, and divergence rate $<5\%$.
+
+\subsection{Gibbs Sampler: Model-Specific MCMC}
+
+The Gibbs sampler of Li et al.~\cite{li2019} exploits closed-form full conditionals and updates $\bOmega$ \textbf{column by column}. For column $j$, partition $\bOmega$ and $\bm{S}$ around $j$ and let $\bm{A} = \bOmega_{-j,-j}$. Using the Wang (2012) reparameterisation of the likelihood, the off-diagonal block has the Gaussian conditional
+\begin{equation}
+  \bm{\omega}_{-j,j} \mid \text{rest} \sim \Normal\!\big(-\bm{C}_j\,\bm{s}_{-j,j},\;\bm{C}_j\big)\;\text{ s.t.\ }\bOmega \succ 0,
+  \label{eq:gibbs-offdiag}
+\end{equation}
+where $\bm{C}_j = (s_{jj}\,\bm{A}^{-1} + \bm{D}_j)^{-1}$ and $\bm{D}_j = \mathrm{diag}\big((\lambda_{ij}^2\tau^2)^{-1}\big)$ is the prior precision. The diagonal is a shifted Gamma,
+\begin{equation}
+  \omega_{jj} = g + \bm{\omega}_{-j,j}^\top\bm{A}^{-1}\bm{\omega}_{-j,j},\quad g \sim \mathrm{Gamma}\!\big(\tfrac{T}{2}{+}1,\; \tfrac{2}{s_{jj}}\big).
+  \label{eq:gibbs-diag}
+\end{equation}
+Half-Cauchy priors on $(\lambda_{ij}, \tau)$ are handled via the Makalic--Schmidt~\cite{makalic2016} auxiliary-variable trick, which turns every update into an inverse-Gamma draw. The PD constraint is enforced by rejection, with the Schur-complement test $\omega_{jj} - \bm{\omega}_{-j,j}^\top\bm{A}^{-1}\bm{\omega}_{-j,j} > 0$ (cost $O(p^2)$). Per-sweep cost is $O(p^3)$ from the $p$ inversions of $\bm{A}$. We implemented the sampler in pure NumPy (${\sim}470$ lines), running one chain of 1{,}000--3{,}000 burn-in + 5{,}000 sampling sweeps (burn-in scales with $p$).
+
+\paragraph{NUTS vs.\ Gibbs.} This comparison tests the tradeoff from Lecture~8: a \emph{generic} gradient sampler versus a \emph{model-specific} sampler with hand-derived coordinate updates. Both target the same posterior, but they fail differently as $p$ grows.
+
+\subsection{ADVI: Automated Variational Inference}
+
+Variational inference maximises the evidence lower bound $\ELBO(q) = \E_q[\log p(\bm{Y},\bm{\theta})] - \E_q[\log q(\bm{\theta})]$ over a tractable family $\mathcal{Q}$; this is equivalent to minimising $\KL(q\|p)$. ADVI~\cite{kucukelbir2017} transforms all constrained parameters to $\R^D$, fits a \textbf{mean-field Gaussian} $q(\bm{\zeta}) = \prod_d\Normal(\zeta_d;\mu_d,\sigma_d^2)$ (or a low-rank Gaussian; see below), and optimises via the reparameterisation trick $\bm{\zeta} = \bm{\mu} + \bm{\sigma}\odot\bm{\epsilon}$, $\bm{\epsilon}\sim\Normal(\bm{0},\bm{I})$. We use NumPyro's \texttt{AutoNormal} guide with ClippedAdam (clip-norm 10) and $N=10{,}000$ (for $p{=}10$) or $50{,}000$ (for $p{\geq}50$) steps, selecting the best of 3--5 random restarts by final ELBO.
+
+\paragraph{Why mean-field may fail on the horseshoe.} The factorisation assumes \emph{a posteriori} independence across all $D$ latents, destroying the tight $\omega_{ij}$--$\lambda_{ij}$ coupling (the funnel of §2.3). Moreover, $\KL(q\|p)$ is \emph{mode-seeking}~\cite{kucukelbir2017}: it penalises mass under small $p$ but not missing mass under large $p$, so $q$ concentrates on one mode and systematically under-covers the posterior---Turner--Sahani's \textbf{compactness} problem~\cite{turner2011}.
+
+\paragraph{ADVI low-rank.} To partially capture posterior correlations we fit $q(\bm{\zeta}) = \Normal(\bm{\mu},\; \bm{L}\bm{L}^\top + \bm{D})$ with $\bm{L}\in\R^{D\times r}$, $r = \min(\max(p/2, 25), 100)$ (so $r{=}25$ at $p{\in}\{10,50\}$, $r{=}50$ at $p{=}100$). This gives ${\sim}500\text{K}$ parameters at $p{=}100$, versus ${\sim}50\text{M}$ for full-rank (infeasible).
+
+\subsection{Frequentist Baselines}
+
+\paragraph{Graphical lasso~\cite{friedman2008}.} Solves $\hat\bOmega = \arg\max_{\bOmega \succ 0}\{\log|\bOmega| - \tr(\hat\bSigma\,\bOmega) - \rho\sum_{i\neq j}|\omega_{ij}|\}$ with $\rho$ selected by 5-fold CV---equivalently the MAP estimator under independent Laplace priors, whose exponential tails are lighter than the horseshoe's and over-shrink large signals.
+
+\paragraph{Ledoit--Wolf~\cite{ledoit2004}.} $\hat\bSigma_{\text{LW}} = \hat\alpha\,\hat\bSigma + (1{-}\hat\alpha)\mu\bm{I}$ with analytically optimal $\hat\alpha$. Dense, non-sparse.
+
+\paragraph{Sample covariance.} $\hat\bSigma = (T{-}1)^{-1}\bm{Y}^\top\bm{Y}$, inverted when $T > p$. Singular when $T \leq p$.
+
+%======================================================================
+\section{Experimental Setup}
+%======================================================================
+
+\subsection{Synthetic Data}
+
+We construct ground-truth precision matrices $\bOmega_0 \in \Spp$ via Erd\H{o}s--R\'{e}nyi random graphs: each of the $\binom{p}{2}$ possible edges is included independently with probability $s$, and nonzero entries are drawn uniformly from $\pm[0.3, 0.8]$. Positive definiteness is enforced via diagonal loading: $\bOmega_0 \leftarrow \bOmega_0 + \max(0,\; 0.1 - \lambda_{\min}(\bOmega_0))\,\bm{I}_p$, guaranteeing $\lambda_{\min}(\bOmega_0) \geq 0.1$. Data is then sampled as $\bm{y}_k \sim \Normal(\bm{0}, \bOmega_0^{-1})$, $k = 1,\ldots,T$. We generated 1{,}680 datasets (84 configurations $\times$ 20 seeds) and validated via eight sanity checks: edge-count distributions, condition numbers, minimum eigenvalue floors, cross-seed independence, and identity $\bOmega_0\bSigma_0 = \bm{I}$ to machine precision.
+
+\subsection{Experimental Grid}
+
+The grid is designed so that varying $\gamma$ at fixed $p$ traces a path from ``easy'' ($\gamma = 0.10$, abundant data) to ``near-singular'' ($\gamma = 0.90$, $T$ barely exceeds $p$). Table~\ref{tab:grid} summarises the design.
+
+\begin{table}[ht]
+\centering
+\caption{Experimental grid. Sample size $T = \lceil p/\gamma \rceil$.}
+\label{tab:grid}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Factor} & \textbf{Levels} \\
+\midrule
+Dimension $p$ & 10, 50, 100 \\
+Concentration $\gamma = p/T$ & 0.10, 0.20, 0.42, 0.67, 0.90 \\
+Graph structure & Erd\H{o}s--R\'{e}nyi \\
+Sparsity $s$ & 0.05, 0.10, 0.30 \\
+Seeds per config & 5 (Bayesian); 20 (frequentist) \\
+Methods & 7 (see \S3) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This yields 42 configurations $\times$ 7 methods, with 3{,}329 successful inference runs across all seeds (the Bayesian methods have some $p{=}100$ failures; see Table~\ref{tab:summary}). All computation was performed on the MIT Engaging cluster using NumPyro/JAX (Bayesian methods) and scikit-learn (frequentist baselines).
+
+\subsection{Evaluation Metrics}
+
+We evaluate each estimate $\hat\bOmega$ against the ground truth $\bOmega_0$ using complementary metrics spanning point estimation, sparsity recovery, and posterior quality.
+
+\paragraph{Stein's loss (primary).} The natural loss for precision matrix estimation, equal to the KL divergence between the estimated and true Gaussians:
+\begin{equation}
+  L_S(\hat\bOmega, \bOmega_0) = \tr(\hat\bOmega^{-1}\bOmega_0) - \log|\hat\bOmega^{-1}\bOmega_0| - p.
+  \label{eq:steins}
+\end{equation}
+$L_S = 0$ iff $\hat\bOmega = \bOmega_0$, and $L_S > 0$ otherwise. This metric is invariant to simultaneous rescaling and is sensitive to eigenvalue ratios, penalising estimates that distort the spectral structure of $\bOmega_0$.
+
+\paragraph{Frobenius loss.} Elementwise squared error: $L_F = \|\hat\bOmega - \bOmega_0\|_F^2$. Less statistically motivated than Stein's loss but easier to interpret: it measures how close $\hat\bOmega$ is to $\bOmega_0$ entry by entry.
+
+\paragraph{Sparsity recovery (F1 and MCC).} We treat edge detection as binary classification. For \emph{Bayesian} methods, we declare edge $(i,j)$ present if the 95\% posterior credible interval for $\omega_{ij}$ excludes zero. For \emph{frequentist} methods, we threshold at $|\hat\omega_{ij}| > 10^{-5}$ (or use the exact structural zeros returned by the graphical lasso). We report F1 (harmonic mean of precision and recall) and MCC (Matthews correlation coefficient, which is balanced for imbalanced classes---important because $\sim$90\% of entries are truly zero at $s = 0.10$).
+
+\paragraph{95\% coverage (Bayesian only).} The fraction of true off-diagonal values falling within their 95\% posterior credible interval. A well-calibrated posterior gives coverage $\approx 0.95$. Values significantly below 0.95 indicate overconfidence; values above indicate conservatism. This is our primary diagnostic for posterior quality as distinct from point-estimation quality.
+
+\paragraph{Bimodality coefficient.} Sarle's bimodality coefficient $b$ applied to $\{\hat\kappa_{ij}\}_{i<j}$, the posterior-mean shrinkage coefficients across all off-diagonal pairs:
+\begin{equation}
+  b = \frac{g^2 + 1}{\kappa_4 + \frac{3(n-1)^2}{(n-2)(n-3)}},
+  \label{eq:bimodality}
+\end{equation}
+where $g$ is the sample skewness, $\kappa_4$ the sample excess kurtosis, and $n = \binom{p}{2}$. Values $b > 5/9 \approx 0.556$ suggest bimodality. This is our diagnostic for whether each method preserves the horseshoe's ``shrink or don't'' structure.
+
+%======================================================================
+\section{Implementation Challenges}
+\label{sec:engineering}
+%======================================================================
+
+Getting the graphical horseshoe to run reliably at scale required solving engineering problems that are instructive for practitioners working with heavy-tailed priors.
+
+\paragraph{NUTS initialisation at $p \geq 50$.}
+NumPyro's default \texttt{init\_to\_uniform} produces starting precision matrices that are wildly non-PD ($\lambda_{\min} \approx -970$ at $p{=}50$), causing immediate divergence cascades. We replaced it with \texttt{init\_to\_value}, providing an explicit PD-safe starting point: $\bOmega^{(0)} = 5\bm{I}$, $\tau^{(0)} = 1$, $\lambda_{ij}^{(0)} = 1$, $z_{ij}^{(0)} = 0$. We also set \texttt{validate\_args=False} on the likelihood so that non-PD proposals during leapfrog trajectories return $\log p = -\infty$ rather than raising exceptions. This is a form of implicit rejection---the Metropolis correction in HMC rejects trajectories that pass through $-\infty$ density regions.
+
+\paragraph{ADVI stability stack.}
+ADVI on the horseshoe required four incremental fixes: (1)~\texttt{init\_to\_median(num\_samples=15)} with small \texttt{init\_scale=0.01} to avoid starting in the heavy tails; (2)~\texttt{ClippedAdam} with gradient norm clipped at 10, preventing the heavy-tailed half-Cauchy gradients from causing parameter explosions; (3)~replacing the Python-level SVI loop with \texttt{svi.run(stable\_update=True)}, a JAX-compiled scan with $\sim$100$\times$ speedup and built-in NaN-skip; (4)~multi-restart selection based on final ELBO rather than per-step traces (with intentional NaN entries under \texttt{stable\_update}).
+
+\paragraph{Storage compression.}
+Posterior samples at $p=100$ consumed 170~GB. We implemented parallel in-place compression (float64 $\to$ float32, \texttt{.npy} $\to$ \texttt{.npz}).
+
+%======================================================================
+\section{Preliminary Results}
+%======================================================================
+
+\subsection{Point Estimation: Stein's Loss}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/steins_loss_vs_gamma.pdf}
+\caption{Stein's loss vs.\ concentration ratio $\gamma = p/T$ (ER graph, $s{=}0.10$; median $\pm$ IQR across seeds). Lower is better. NUTS (blue) and Gibbs (cyan) overlap nearly perfectly at $p{\leq}50$. At $p{=}100$, Gibbs is the lowest line at every $\gamma$ (${\sim}1.5$--$10$) while NUTS sits 2--3$\times$ above ($\sim$3--10) because its non-converged chains (\S\ref{sec:nuts-failure}) average over disjoint posterior regions. ADVI-MF/LR jump to 10--20 at $p{=}100$, comparable to glasso/LW.}
+\label{fig:steins-vs-gamma}
+\end{figure*}
+
+Figure~\ref{fig:steins-vs-gamma} shows Stein's loss across all $(p, \gamma)$ configurations. Three patterns emerge.
+
+\emph{At $p = 10$} (left panel), all methods are clustered between 0.2 and 5---the problem is easy enough that even the sample covariance performs acceptably. NUTS achieves the lowest loss ($\sim$0.15 at $\gamma = 0.10$), but the gap to ADVI-MF and glasso is small.
+
+\emph{At $p = 50$} (centre panel), the methods separate clearly. NUTS is consistently best, sitting at $\sim$0.6 at low $\gamma$ and rising to $\sim$3 at $\gamma = 0.90$. ADVI-MF tracks NUTS with roughly 2$\times$ the loss across all $\gamma$ values---a modest degradation given that ADVI-MF runs 50$\times$ faster (Figure~\ref{fig:runtime}). The graphical lasso is competitive at low $\gamma$ but shows high seed-to-seed variance at high $\gamma$, reflecting sensitivity to the CV-selected penalty $\rho$.
+
+\emph{At $p = 100$} (right panel), the ranking inverts: \textbf{Gibbs is the lowest line at every $\gamma$} (${\sim}1.5$ at $\gamma{=}0.10$, rising to ${\sim}10$ at $\gamma{=}0.90$), 2--3$\times$ below NUTS. The gap is not Gibbs being unusually good---it is NUTS posterior-averaging across disjoint, non-mixed chains (\S\ref{sec:nuts-failure}), which is not a consistent estimator. ADVI-MF/LR sit in the 10--20 range, glasso jumps to ${\sim}30$, sample\_cov/LW rise steeply at high $\gamma$.
+
+\paragraph{Sparsity sensitivity.} At fixed $p{=}50$, $\gamma{=}0.42$, NUTS's advantage over glasso grows as the true matrix becomes sparser: $\sim$5$\times$ better at $s{=}0.05$, $\sim$2$\times$ at $s{=}0.30$. This confirms the theoretical prediction: the horseshoe's heavy-tailed prior provides the largest benefit when most entries are exactly zero.
+
+\subsection{Shrinkage Profiles: The Central Diagnostic}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\linewidth]{fig/shrinkage_cfg17_p17.pdf}\\[2pt]
+\includegraphics[width=\linewidth]{fig/shrinkage_cfg45_p45.pdf}\\[2pt]
+\includegraphics[width=\linewidth]{fig/shrinkage_cfg73_p73.pdf}
+\caption{Posterior shrinkage profiles $\hat\kappa_{ij}$ at $\gamma{=}0.20$, $s{=}0.10$, seed~0. Each row is a dimension ($p{=}10, 50, 100$); each column is a method (NUTS, Gibbs, ADVI-MF). The red dashed line marks the bimodality threshold $b = 5/9$. Gibbs and NUTS produce near-identical bimodal distributions at every $p$; ADVI-MF tracks them at $p{\leq}50$ but collapses into a unimodal regime at $p{=}100$ (rightmost column, bottom row).}
+\label{fig:shrinkage}
+\end{figure}
+
+Figure~\ref{fig:shrinkage} shows the distribution of posterior-mean shrinkage coefficients $\hat\kappa_{ij}$ across all $\binom{p}{2}$ off-diagonal pairs.
+
+\emph{At $p = 10$} (top row, 45 pairs), all three methods pile ${\sim}$42 of 45 entries at $\kappa \approx 1$ (correct, since ${\sim}$90\% of entries are truly zero) and place 2--3 outlier bars in $\kappa \in [0.6, 0.9]$ corresponding to the true signal entries. Bimodality coefficients are nearly indistinguishable (NUTS $b{=}0.92$, Gibbs $b{=}0.92$, ADVI-MF $b{=}0.95$); the problem is too small for the mean-field approximation to matter.
+
+\emph{At $p = 50$} (middle row, 1{,}225 pairs), the classic horseshoe shape appears in both MCMC methods (NUTS $b = 0.89$, Gibbs $b = 0.91$): a dominant mode at $\kappa \approx 0.95$--$1.0$ (noise entries shrunk) and a secondary spread around $\kappa \in [0.6, 0.9]$ (signal entries partially preserved). ADVI-MF tracks this shape surprisingly well ($b = 0.89$)---the mean-field approximation preserves the \emph{between-entry} shrinkage profile even though it breaks the \emph{within-entry} $\omega_{ij}$--$\lambda_{ij}$ correlation. ADVI-LR, by contrast, is already degraded ($b = 0.55$, right at the $5/9$ threshold), consistent with its coverage collapse at this dimension.
+
+\emph{At $p = 100$} (bottom row, 4{,}950 pairs), the picture changes dramatically for the variational methods. Both MCMC methods retain the bimodal structure (NUTS $b = 0.90$, Gibbs $b = 0.90$)---but \emph{both} ADVI variants collapse into a unimodal regime ($b = 0.45$ for MF, $b = 0.47$ for LR), below the $5/9$ threshold. Instead of ``shrink or don't,'' ADVI applies \emph{moderate shrinkage to everything}: true zeros get half-shrunk, true signals get half-shrunk, and the horseshoe's signature is destroyed at $D \approx 10{,}000$ dimensions.
+
+\paragraph{Interpretation.} Our original hypothesis (from the proposal) was that mean-field VI would destroy bimodality at \emph{any} $p$. Instead, the failure is gradual: at $D \approx 2{,}500$ ($p{=}50$), the mean-field family is flexible enough to represent the bimodal $\kappa$ distribution because the between-entry variation is high-dimensional and ``easy'' for a product distribution to capture. At $D \approx 10{,}000$ ($p{=}100$), the accumulation of independence assumptions across four times as many latent dimensions overwhelms this, and the bimodality collapses.
+
+\subsection{Posterior Calibration}
+
+\begin{table}[ht]
+\centering
+\caption{Coverage of 95\% posterior credible intervals (nominal = 0.95). ER graph, $s{=}0.10$, $\gamma{=}0.20$.}
+\label{tab:coverage}
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Method} & $p=10$ & $p=50$ & $p=100$ \\
+\midrule
+NUTS    & 1.00 & 0.99 & 0.98$^*$ \\
+Gibbs   & 1.00 & 0.99 & \textbf{0.99} \\
+ADVI-MF & 0.96 & 0.96 & \textbf{0.01} \\
+ADVI-LR & 0.96 & \textbf{0.39} & \textbf{0.10} \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\footnotesize $^*$Based on non-converged chains ($\hat{R}\gg 1.01$); interpret with caution.
+\end{table}
+Table~\ref{tab:coverage} shows the calibration story. Both MCMC methods post near-nominal coverage throughout (0.98--1.00), but only Gibbs does so on verified-converged chains: NUTS's $p{=}100$ value comes from non-converged chains that happen to produce wide credible intervals---a symptom of inflated variance, not genuine calibration. Gibbs's $p{=}100$ coverage of 0.99 is thus the unique reliable uncertainty quantification at high dimension. The two variational methods degrade very differently:
+\emph{Mean-field ADVI} is well-calibrated at $p{\leq}50$ (0.96 at both dimensions, within a point of nominal) and then \textbf{catastrophically collapses} at $p{=}100$: coverage of 0.01 means that 99\% of true parameter values fall \emph{outside} the 95\% credible intervals. The posterior is wildly overconfident.
+\emph{Low-rank ADVI} fails \emph{earlier} than mean-field: coverage already drops to 0.39 at $p{=}50$ and 0.10 at $p{=}100$. Our expectation was the opposite---the richer covariance family should track the posterior better---but the low-rank guide has only 3 restarts (vs.\ 5 for MF) and occasionally converges to near-singular variational parameters that produce severely under-dispersed posteriors. Raising the restart count and the rank cap is queued for the final report.
+
+\subsection{NUTS Structural Failure at $p = 100$}
+\label{sec:nuts-failure}
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\linewidth]{fig/nuts_convergence_dashboard.pdf}
+\caption{NUTS convergence diagnostics across successful runs. At $p{=}100$: median max-$\hat{R} = 5.01$, median min-ESS $= 2$, median divergence rate $= 10.5\%$. The red dashed lines mark the convergence thresholds. Zero of 50 successful $p{=}100$ runs pass all three criteria.}
+\label{fig:nuts-dashboard}
+\end{figure}
+
+Of 70 NUTS tasks at $p{=}100$, 50 succeeded (the rest failed or timed out at 12h wall). However, \textbf{zero of these 50 met the strict convergence gate} ($\hat{R} < 1.01$ and ESS $> 400$ and divergence rate $< 5\%$). Figure~\ref{fig:nuts-dashboard} visualises the breakdown across all three criteria:
+
+\emph{R-hat} (left): the median is 5.01, meaning the between-chain variance is $\sim$25$\times$ the within-chain variance. The four chains are exploring entirely different posterior regions. Five runs have $\hat{R} > 20$ (max 58.3).
+
+\emph{Effective sample size} (centre): the median is 2. Out of 20{,}000 posterior draws (4 chains $\times$ 5{,}000 samples), the effective number of independent samples per parameter is \emph{two}. The chains are frozen---returning nearly identical values with occasional jumps that never equilibrate.
+
+\emph{Divergence rate} (right): the median is 10.5\%, with some runs reaching 32\%. Each divergence indicates a region of extreme curvature in the posterior (the horseshoe funnel) where the leapfrog integrator's energy error exceeded tolerance; i.e. the sampler is systematically avoiding parts of the posterior.
+
+\paragraph{This is a geometric failure, not a runtime failure.} NUTS completes and \emph{produces outputs that look like posterior samples}---every $\bOmega^{(s)}$ is PD, every $\hat{R}$ computation runs to completion---but the chains have not mixed. The horseshoe's funnel geometry at $D \approx 10{,}000$ dimensions creates curvature that no leapfrog step size can navigate: too large and the integrator diverges; too small and the chain cannot move. More warmup, deeper trees, or different mass matrices will not resolve this fundamental geometric incompatibility.
+
+\subsection{A Silent Bug in the Gibbs Posterior Conditional}
+\label{sec:gibbs-bug}
+
+The Gibbs sampler initially produced Stein's loss 30--40$\times$ worse than NUTS and degenerate shrinkage profiles ($\kappa \equiv 1$; Figure~\ref{fig:shrinkage}). The proximal symptom was a collapse of $\tau^2$ to $\sim$10$^{-16}$ within a handful of sweeps, but the root cause was upstream: the off-diagonal column update~\eqref{eq:gibbs-offdiag} had been implemented with three compounding errors relative to the derivation in ~\cite{li2019}. The posterior precision used $\bOmega_{-j,-j}$ in place of $\bOmega_{-j,-j}^{-1}$, and both $\bm{\mu}_j$ and $\bm{\Sigma}_j$ were erroneously divided by $s_{jj}$. Each draw of $\bm{\omega}_{-j,j}$ was shrunk by a factor of $s_{jj}^2\approx10^4$, so the sum-ratio $\sum_{i<j}\omega_{ij}^2/\lambda_{ij}^2$ stayed at zero, and the Makalic--Schmidt~\cite{makalic2016} $\xi$/$\tau^2$ auxiliary then drove $\tau^2$ into an absorbing state near machine precision.
+
+\paragraph{The fix.} The corrected formulas (now equations~\eqref{eq:gibbs-offdiag}--\eqref{eq:gibbs-diag} in this paper) are a 6-line patch. The full Tier~2 re-run (210 tasks) completed before this submission; at $(p,\gamma,s)=(100, 0.20, 0.10)$ the fixed sampler matches NUTS on Stein's loss (2.86 vs.\ 3.00), attains nominal coverage (0.99), and recovers the bimodal shrinkage signature ($b = 0.90$). All Gibbs numbers in Tables~\ref{tab:coverage}--\ref{tab:summary} and Figure~\ref{fig:shrinkage} come from this re-run. A regression test asserts posterior-mean off-diagonals are both $>$10$^{-3}$ \emph{and} $>$10\% of the truth scale, so the failure cannot silently return.
+
+\paragraph{Why we report the bug.} Every generic convergence diagnostic \emph{passed} on the broken sampler---ESS on $\tau^2$ was in the thousands, Geweke rejected stationarity shifts, the Markov chain was genuinely stationary. But it was stationary at the wrong fixed point. Only cross-method validation against NUTS and inspection of the $\kappa$ distribution exposed the problem. \textbf{Model-specific samplers require model-specific validation}, not just generic MCMC diagnostics.
+
+\subsection{Runtime Comparison}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\linewidth]{fig/elapsed_time_vs_p.pdf}
+\caption{Wall-clock time per run vs.\ dimension $p$ (log-log scale; median $\pm$ IQR across all $\gamma$ and $s$ values). The methods separate into four tiers: sub-second frequentist, minutes (ADVI-MF), tens of minutes (Gibbs, ADVI-LR), and hours (NUTS). At $p{=}100$, Gibbs is 8$\times$ faster than NUTS.}
+\label{fig:runtime}
+\end{figure}
+
+Figure~\ref{fig:runtime} reveals the compute--quality tradeoff across four distinct tiers. Ledoit--Wolf and the sample covariance solve closed-form expressions in $<$1ms; glasso runs coordinate descent in $<$3s even at $p{=}100$. ADVI-MF scales gently to ${\sim}$200s (${\sim}$3 min) at $p{=}100$. Gibbs and ADVI-LR occupy the tens-of-minutes band, with Gibbs reaching ${\sim}$50 min at $p{=}100$ on a scaling curve consistent with $O(p^3)$. NUTS is the most expensive: ${\sim}$7h at $p{=}100$ due to growing leapfrog trajectory lengths on top of the $O(p^3)$ per-step Cholesky cost.
+
+The practical implication is stark: at $p{=}100$, ADVI-MF finishes in 3 minutes but produces overconfident intervals (coverage $= 0.01$); NUTS takes 7 hours but does not converge ($\hat{R}\approx 5$); Gibbs takes 45 minutes and produces calibrated, bimodal, NUTS-quality posteriors on a verified-converged chain---the unique sweet spot of compute and statistical quality at this dimension.
+
+\subsection{Summary of Findings}
+
+Table~\ref{tab:summary} synthesises results across dimensions and evaluation criteria.
+
+\begin{table*}[t]
+\centering
+\caption{Summary across $p \in \{10, 50, 100\}$ at $\gamma = 0.20$, ER graph, $s = 0.10$. Stein's loss: median across seeds (lower is better). Coverage: fraction of true entries within 95\% credible intervals (nominal $= 0.95$). Bimodality $b > 5/9 \approx 0.556$ indicates the horseshoe's shrinkage signature is preserved.}
+\label{tab:summary}
+\small
+\begin{tabular}{@{}ll rrr rrr rrr rr@{}}
+\toprule
+& & \multicolumn{3}{c}{\textbf{Stein's loss} $\downarrow$} & \multicolumn{3}{c}{\textbf{Coverage}} & \multicolumn{3}{c}{\textbf{Bimodality} $b$} & \multicolumn{2}{c}{\textbf{Wall time}} \\
+\cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11} \cmidrule(lr){12-13}
+\textbf{Method} & \textbf{Type} & \footnotesize $p{=}10$ & \footnotesize $p{=}50$ & \footnotesize $p{=}100$ & \footnotesize $p{=}10$ & \footnotesize $p{=}50$ & \footnotesize $p{=}100$ & \footnotesize $p{=}10$ & \footnotesize $p{=}50$ & \footnotesize $p{=}100$ & \footnotesize $p{=}50$ & \footnotesize $p{=}100$ \\
+\midrule
+NUTS      & Grad.\ MCMC & 0.70 & 1.56 & 3.00$^*$ & 1.00 & 0.99 & 0.98$^*$ & .92 & .89 & .90$^*$ & 95m  & 7h \\
+Gibbs     & Model MCMC  & \textbf{0.70} & \textbf{1.48} & \textbf{2.86} & 1.00 & 0.99 & \textbf{0.99} & .92 & .91 & \textbf{.90} & 3m   & 45m \\
+ADVI-MF   & MF VI       & 0.59  & 2.25  & 14.8   & .96 & .96 & \textbf{.01} & .92 & .89 & \textbf{.45} & 2m   & 3m \\
+ADVI-LR   & LR VI       & 0.66  & 2.53  & 13.0   & .96 & \textbf{.39} & \textbf{.10} & .92 & \textbf{.55} & \textbf{.47} & 16m  & 2h \\
+Glasso    & Freq.       & 0.55 & 12.1 & 31.4   & --- & --- & --- & --- & --- & --- & $<$1s & 2s \\
+LW        & Freq.       & 0.82 & 4.4  & 9.1    & --- & --- & --- & --- & --- & --- & $<$1s & $<$1s \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\footnotesize All numeric values are medians across successful seeds ($n{=}5$ Bayesian, $n{=}20$ frequentist). $^*$NUTS $p{=}100$ chains did not converge (median $\hat{R}\approx 5$); point estimates unreliable. Gibbs $p{=}100$ is the \emph{only} Bayesian method that attains these losses on a verified-converged chain.
+\end{table*}
+
+Five headline findings emerge:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Dimension-dependent bimodality collapse.} Mean-field ADVI preserves the horseshoe's bimodal shrinkage at $p{=}50$ ($b = 0.89$, indistinguishable from NUTS) but destroys it at $p{=}100$ ($b = 0.45$). Low-rank ADVI degrades earlier, sitting right at the $5/9$ threshold at $p{=}50$ ($b = 0.55$).
+
+  \item \textbf{NUTS geometric failure at $p{=}100$.} Zero of 50 completed runs converge (median $\hat{R} = 5.01$, median bulk-ESS $= 2$, median divergence rate $= 10.5\%$). The horseshoe funnel at $D \approx 10{,}000$ is structurally incompatible with gradient-based HMC exploration, regardless of runtime budget.
+
+  \item \textbf{ADVI coverage catastrophe starts at $p{=}50$ for the low-rank guide.} ADVI-LR coverage drops to 0.39 at $p{=}50$ and 0.10 at $p{=}100$; ADVI-MF stays calibrated at $p{\leq}50$ (0.96) then collapses to 0.01 at $p{=}100$. Neither variational method is trustworthy at the dimension of our target application.
+
+  \item \textbf{Gibbs matches NUTS at $p{\leq}50$ and beats it at $p{=}100$.} The corrected Li et al.\ sampler ties NUTS on Stein's loss at $p{\leq}50$ (1.48 vs.\ 1.56 at $p{=}50$), then pulls ahead at $p{=}100$ (2.86 vs.\ 3.00 at $\gamma{=}0.20$, ${\sim}$2$\times$ better at $\gamma{=}0.10$) precisely because NUTS's non-mixed chains contaminate its posterior mean. Gibbs maintains nominal coverage (0.99), preserves bimodality ($b = 0.90$), and converges on a single chain (min bulk-ESS $\geq 473$) in 45~min/seed---8$\times$ faster than NUTS's 7~hours of non-convergent compute.
+
+  \item \textbf{Horseshoe beats glasso in the sparse regime.} NUTS achieves 8$\times$ lower Stein's loss than glasso at $p{=}50$, $\gamma{=}0.20$, $s{=}0.10$ (1.56 v.\ 12.1), confirming the horseshoe's theoretical advantage for sparse precision matrices.
+\end{enumerate}
+
+%======================================================================
+\section{Remaining Work}
+%======================================================================
+
+\begin{table}[ht]
+\centering
+\caption{Remaining steps with deadlines.}
+\label{tab:remaining}
+\small
+\begin{tabular}{@{}p{5cm}ll@{}}
+\toprule
+\textbf{Step} & \textbf{Deadline} & \textbf{Owner} \\
+\midrule
+Wire PSIS-$\hat{k}$ into ADVI eval pipeline & Apr 20 & Nick \\
+ADVI-LR re-run with 5 restarts + larger rank cap & Apr 22 & Nick \\
+\midrule
+Block-diagonal graph sensitivity & Apr 22 & Arturo \\
+Portfolio backtest: GMV weights, OOS volatility & Apr 28 & Arturo \\
+\midrule
+CRSP real data ($p{=}50$, $T{=}250$); run all 7 methods & Apr 25 & Federico \\
+Final report draft (12 pages, ICML) & May 1 & Federico \\
+\midrule
+Figures, editing, presentation & May 3 & All \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{ADVI-LR re-run.} The outlier-seed behaviour driving ADVI-LR's coverage collapse at $p{=}50$ can likely be mitigated by matching ADVI-MF's restart count (5 vs.\ the current 3) and raising the rank cap beyond $r = \min(\max(p/2,25),100)$. A 1-day compute run; if it fixes the calibration story, we remove the ``LR fails earlier'' caveat from the narrative.
+
+\paragraph{PSIS diagnostics.} Pareto Smoothed Importance Sampling~\cite{yao2018} will provide a second, independent confirmation of ADVI failure at $p{=}100$ beyond coverage, by estimating the shape parameter $\hat{k}$ of the importance-weight tail ($\hat{k} > 0.7$ indicates the variational approximation is unreliable).
+
+\paragraph{Real data.} CRSP daily returns ($p{=}50$ most liquid large-caps, $T{=}250$). Since $\bOmega_0$ is unknown, evaluation shifts to out-of-sample log-likelihood and minimum-variance portfolio performance.
+
+%======================================================================
+\section{Plot Description for the Final Report}
+%======================================================================
+
+The central figure of the final report will be an expanded \textbf{Stein's loss vs.\ $\gamma$} plot (cf.\ Figure~\ref{fig:steins-vs-gamma}).
+
+\textbf{Horizontal axis:} $\gamma\in \{0.10, 0.20, 0.42, 0.67, 0.90\}$.
+
+\textbf{Vertical axis:} Stein's loss (log scale), median $\pm$ IQR across 5 seeds.
+
+\textbf{Layout:} three panels (one per $p$), 7 lines per panel (one per method), consistent colours and markers across panels.
+
+\textbf{What the reader learns:} at low $\gamma$ (easy), all methods cluster---the data is rich enough that regularisation provides little benefit. As $\gamma$ increases, the Bayesian methods separate from frequentist baselines, quantifying the horseshoe's value at each difficulty level. At $p{=}100$, the corrected Gibbs line should sit near NUTS (both target the same posterior), with ADVI-MF intermediate and glasso/LW diverging. The crossing points identify the critical $\gamma$ at which the horseshoe prior's benefit exceeds its computational cost.
+
+This figure directly answers our research question: \emph{at what concentration ratio does variational inference degrade enough to justify MCMC, and at what dimension does even MCMC become impractical?}
+
+%======================================================================
+\section*{Acknowledgements}
+%======================================================================
+We used NumPyro/JAX for Bayesian inference, scikit-learn for frequentist baselines, and Claude (Anthropic) for code assistance, debugging, and document formatting. Computations were performed on the MIT Engaging cluster.
+
+%======================================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{12}
+
+\bibitem{li2019}
+Y.~Li, B.~A.~Craig, and A.~Bhadra.
+\newblock The graphical horseshoe estimator for inverse covariance matrices.
+\newblock {\em Bayesian Analysis}, 14(3):735--757, 2019.
+
+\bibitem{hoffman2014}
+M.~D.~Hoffman and A.~Gelman.
+\newblock The No-U-Turn Sampler.
+\newblock {\em JMLR}, 15(1):1593--1623, 2014.
+
+\bibitem{kucukelbir2017}
+A.~Kucukelbir, D.~Tran, R.~Ranganath, A.~Gelman, and D.~M.~Blei.
+\newblock Automatic differentiation variational inference.
+\newblock {\em JMLR}, 18(14):1--45, 2017.
+
+\bibitem{friedman2008}
+J.~Friedman, T.~Hastie, and R.~Tibshirani.
+\newblock Sparse inverse covariance estimation with the graphical lasso.
+\newblock {\em Biostatistics}, 9(3):432--441, 2008.
+
+\bibitem{ledoit2004}
+O.~Ledoit and M.~Wolf.
+\newblock A well-conditioned estimator for large-dimensional covariance matrices.
+\newblock {\em JMVA}, 88(2):365--411, 2004.
+
+\bibitem{carvalho2010}
+C.~M.~Carvalho, N.~G.~Polson, and J.~G.~Scott.
+\newblock The horseshoe estimator for sparse signals.
+\newblock {\em Biometrika}, 97(2):465--480, 2010.
+
+\bibitem{phan2019}
+D.~Phan, N.~Pradhan, and M.~Jankowiak.
+\newblock Composable effects for flexible and accelerated probabilistic programming in NumPyro.
+\newblock {\em arXiv:1912.11554}, 2019.
+
+\bibitem{makalic2016}
+E.~Makalic and D.~F.~Schmidt.
+\newblock A simple sampler for the horseshoe estimator.
+\newblock {\em IEEE Signal Processing Letters}, 23(1):179--182, 2016.
+
+\bibitem{yao2018}
+Y.~Yao, A.~Vehtari, D.~Simpson, and A.~Gelman.
+\newblock Yes, but did it work? {E}valuating variational inference.
+\newblock {\em ICML}, 2018.
+
+\bibitem{turner2011}
+R.~E.~Turner and M.~Sahani.
+\newblock Two problems with variational expectation maximisation for time-series models.
+\newblock In {\em Bayesian Time Series Models}, Cambridge Univ.\ Press, 2011.
+
+\end{thebibliography}
+
+\end{document}

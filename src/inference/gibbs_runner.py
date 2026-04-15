@@ -119,7 +119,7 @@ def _sample_column(
     """
     # --- Partition Ω and S around column j ---
     others = np.concatenate([np.arange(j), np.arange(j + 1, p)])
-    Omega_minus = Omega[np.ix_(others, others)]        # (p-1, p-1)
+    Omega_minus = Omega[np.ix_(others, others)]        # (p-1, p-1) = A
     s_minus_j = S[others, j]                            # (p-1,)
     s_jj = S[j, j]
 
@@ -128,16 +128,26 @@ def _sample_column(
     d_j = 1.0 / (lam_sq_col * tau_sq + 1e-30)          # (p-1,)
     D_j = np.diag(d_j)
 
-    # --- Conditional covariance and mean (Li et al. eq. 3.2) ---
-    C_j = np.linalg.inv(s_jj * Omega_minus + D_j)      # (p-1, p-1)
-    mu_j = -C_j @ s_minus_j / s_jj                     # (p-1,)
-    Sigma_j = C_j / s_jj                                # (p-1, p-1)
+    # --- Ω_{-j,-j}⁻¹ enters both the posterior precision AND the Schur check ---
+    Omega_minus_inv = np.linalg.inv(Omega_minus)
+
+    # --- Conditional covariance and mean ---
+    # The Wang (2012) / Li et al. (2019) reparameterisation of the likelihood
+    # gives γ = ω_{-j,j} | rest ~ N(μ, Σ) with
+    #     Σ = (s_jj · A⁻¹ + D_j)⁻¹,        μ = -Σ · s_{-j,j}
+    # (Derivation: the γ-dependent terms in log L are
+    #   -(s_jj/2) γᵀ A⁻¹ γ - s_{-j,j}ᵀ γ,  combined with the N(0, diag(λ²τ²)) prior.)
+    #
+    # An earlier implementation used `s_jj·A + D_j` with μ and Σ divided by s_jj;
+    # that shrinks μ by a factor of s_jj² ≈ 10⁴, producing posterior draws that
+    # are numerically indistinguishable from 0.  See gibbs_runner tests for
+    # regression coverage.
+    C_j = np.linalg.inv(s_jj * Omega_minus_inv + D_j)  # (p-1, p-1)  ← precision inverted
+    mu_j = -C_j @ s_minus_j                             # (p-1,)       ← NO /s_jj
+    Sigma_j = C_j                                       # (p-1, p-1)   ← NO /s_jj
 
     # Symmetrise for numerical stability
     Sigma_j = 0.5 * (Sigma_j + Sigma_j.T)
-
-    # --- Precompute Ω_{-j,-j}⁻¹ for Schur complement PD check ---
-    Omega_minus_inv = np.linalg.inv(Omega_minus)
 
     # --- Sample off-diagonal via truncated normal (rejection) ---
     n_rej = 0
@@ -349,9 +359,32 @@ def run_gibbs(
     # --- Index maps ---
     pair_to_flat, col_lambda_indices = _build_index_maps(p)
 
-    # --- Initialisation (safe PD starting point) ---
-    diag_init = rng.gamma(shape=2.0, scale=0.5, size=p) + 1.0
-    Omega = np.diag(diag_init)
+    # --- Initialisation (PD + warm-started off-diagonals) ---
+    #
+    # A cold start with ``Omega = diag(...)`` makes sum_ratio = Σ ω²/λ²
+    # start at exactly 0, which lets the ξ/τ² auxiliary feedback collapse
+    # τ² multiplicatively to machine zero within a handful of sweeps
+    # (each ξ update produces a large ξ because 1 + 1/τ² explodes; then
+    # 1/ξ → 0 becomes the dominant term in the τ² rate; τ² shrinks
+    # further; repeat).  Once τ² is ~1e-16, the prior precision
+    # 1/(λ²·τ²) ≈ 1e15 dominates the likelihood and off-diagonals never
+    # escape 0 — an absorbing state.
+    #
+    # Warm-start Ω from a ridge-regularised sample precision so
+    # sum_ratio has real signal from sweep 1.
+    try:
+        S_ridge = S / float(T) + 0.1 * np.eye(p)
+        Omega = np.linalg.inv(S_ridge)
+        # Clamp diagonal to a safe range; off-diagonals preserved.
+        np.fill_diagonal(Omega, np.clip(np.diag(Omega), 0.5, 10.0))
+        # Guard against any residual non-PD after the diagonal clamp.
+        min_eig = float(np.linalg.eigvalsh(Omega).min())
+        if min_eig < 1e-3:
+            Omega = Omega + (1e-3 - min_eig) * np.eye(p)
+    except np.linalg.LinAlgError:
+        diag_init = rng.gamma(shape=2.0, scale=0.5, size=p) + 1.0
+        Omega = np.diag(diag_init)
+
     lambda_sq = np.ones(n_offdiag)
     nu = np.ones(n_offdiag)
     tau_sq = 1.0

@@ -35,7 +35,7 @@ tail -f ~/DLO/dlo_cleaning.out
 
 | Action | Where | Command |
 |--------|--------|--------|
-| **Mac → cluster** (no data/venv/info/papers)** | Mac | rsync -avz --exclude='.*' --exclude='data/' --exclude='_info/' --exclude='.venv/' --exclude='results/' --exclude='/logs'  /Users/arturofavara/Desktop/bayesian_spm/ favara@orcd-login.mit.edu:~/bayesian_spm/ |
+| **Mac → cluster** (no data/venv/info/papers)** | Mac | rsync -avz --exclude='.*' --exclude='data/' --exclude='_info/' --exclude='*__pycache__/' --exclude='results/' --exclude='/logs'  /Users/arturofavara/Desktop/bayesian_spm/ favara@orcd-login.mit.edu:~/bayesian_spm/ |
 | **Cluster → Mac** (same excludes) | Mac | `rsync -avz --exclude='data/raw/' --exclude='data/processed/' --exclude='venv/' --exclude='__pycache__/' favara@eofe7.mit.edu:~/DLO/ /Users/arturofavara/Desktop/DLO/` |
 | **Upload one file** | Mac | `scp slurms/run_optionprice_initial_plots.slurm favara@eofe7.mit.edu:~/DLO/slurms/` |
 

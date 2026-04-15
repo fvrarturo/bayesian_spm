@@ -109,6 +109,15 @@ def _safe_std(vals):
     return float(np.std(vs, ddof=1)) if len(vs) > 1 else (0.0 if vs else None)
 
 
+def _safe_percentile(vals, q):
+    vs = _finite_values(vals)
+    return float(np.percentile(vs, q)) if vs else None
+
+
+def _safe_median(vals):
+    return _safe_percentile(vals, 50)
+
+
 def _walk_metrics(
     manifest_path: Path,
     results_root: Path,
@@ -162,10 +171,15 @@ def build_per_config_method(walk: Dict) -> List[dict]:
                 "n_seeds_failed": len(rows) - len(success),
             }
             # Elapsed from diagnostics-embedded fields if present in metrics.
+            # Compute both parametric (mean/std) and robust (median/IQR)
+            # summaries so the figure code can switch without re-reading.
             for field in NUMERIC_FIELDS:
                 vals = [r.get(field) for r in success]
                 summary[f"{field}_mean"] = _safe_mean(vals)
                 summary[f"{field}_std"] = _safe_std(vals)
+                summary[f"{field}_median"] = _safe_median(vals)
+                summary[f"{field}_q25"] = _safe_percentile(vals, 25)
+                summary[f"{field}_q75"] = _safe_percentile(vals, 75)
             out.append(summary)
     return out
 

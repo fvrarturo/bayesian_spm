@@ -307,6 +307,44 @@ class TestGibbsSmoke:
         assert "geweke_p_value_tau" in diag
         assert "mean_rejection_rate_per_column" in diag
 
+    def test_gibbs_offdiag_not_collapsed_to_zero(self, tiny_seed_dir, tmp_path):
+        """Regression test for the τ² / Block-1 collapse bug.
+
+        The previous implementation had two compounding errors in the
+        off-diagonal column update — posterior precision used Ω_{-j,-j}
+        instead of Ω_{-j,-j}⁻¹, and μ/Σ were both divided by s_jj — which
+        shrank every draw by a factor of s_jj² ≈ 10⁴.  Combined with the
+        ξ-auxiliary τ² update, this produced a chain where all
+        off-diagonal posterior-mean entries were numerically zero.
+
+        The smoke tests only checked PD + symmetry and so missed it.
+        This test asserts that on a tiny problem with real edges, the
+        posterior mean of Ω̂ recovers non-trivial off-diagonal mass.
+        """
+        seed_dir, Omega_true, _ = tiny_seed_dir
+        out = tmp_path / "out" / "gibbs"
+        run_inference(
+            "gibbs", seed_dir, out,
+            n_burnin=300, n_samples=500, n_thinning=1,
+        )
+        omega_hat = np.load(out / "omega_hat.npy")
+        p = omega_hat.shape[0]
+        iu = np.triu_indices(p, 1)
+        mean_abs_off_hat = float(np.abs(omega_hat[iu]).mean())
+        mean_abs_off_true = float(np.abs(Omega_true[iu]).mean())
+        assert mean_abs_off_hat > 1e-3, (
+            f"Gibbs off-diagonals collapsed to zero "
+            f"(mean|Ω̂_ij|={mean_abs_off_hat:.2e}). "
+            "The τ² collapse / Block-1 conditional bug is back. "
+            "Check gibbs_runner._sample_column: posterior precision must use "
+            "Ω_{-j,-j}⁻¹ (not Ω_{-j,-j}), and μ/Σ must NOT be divided by s_jj."
+        )
+        # Recovery should be within an order of magnitude of truth.
+        assert mean_abs_off_hat > 0.1 * mean_abs_off_true, (
+            f"Gibbs severely under-recovered: |Ω̂|={mean_abs_off_hat:.3f} "
+            f"vs truth {mean_abs_off_true:.3f}"
+        )
+
     def test_gibbs_evaluate_produces_metrics(self, tiny_seed_dir, tmp_path):
         """Evaluation should work on Gibbs output."""
         from src.evaluation.evaluate_single import evaluate
