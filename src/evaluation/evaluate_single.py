@@ -42,6 +42,7 @@ from src.evaluation.shrinkage import (
     shrinkage_profile_summary,
     shrinkage_wasserstein,
 )
+from src.evaluation.holdout import compute_holdout_metrics
 from src.utils.io import load_samples, samples_exist
 
 # The canonical list of numeric metric keys that every metrics.json carries.
@@ -195,10 +196,17 @@ def evaluate(
         _write_metrics(results_dir, metrics)
         return metrics
 
-    # --- 3. Load ground truth ---
+    # --- 3. Load ground truth (or detect real-data sentinel) ---
     Omega_true = np.load(data_dir / "omega_true.npy")
     with open(data_dir / "metadata.json") as f:
         data_metadata = json.load(f)
+
+    if data_metadata.get("real_data"):
+        # Real-data branch (WORK4 §3): no ground truth, evaluate on
+        # held-out window via OOS metrics.
+        return _evaluate_real_data(
+            method, data_dir, results_dir, diagnostics, data_metadata,
+        )
 
     # --- 4. Load inference estimate ---
     omega_hat_path = results_dir / "omega_hat.npy"
@@ -278,3 +286,82 @@ def _write_metrics(results_dir: Path, metrics: dict) -> None:
     from src.inference.run_single import _to_py
     with open(path, "w") as f:
         json.dump(_to_py(metrics), f, indent=2)
+
+
+# ======================================================================
+# Real-data branch (WORK4 §3)
+# ======================================================================
+
+def _evaluate_real_data(
+    method: str,
+    data_dir: Path,
+    results_dir: Path,
+    diagnostics: dict,
+    data_metadata: dict,
+) -> dict:
+    """Evaluate Ω̂ against held-out returns when no ground truth exists.
+
+    Reads ``Y_test.npy`` from the data dir and computes:
+    - oos_nll: average NLL of test data under N(0, Ω̂⁻¹)
+    - gmv_oos_variance: realised variance of the GMV portfolio
+    - gmv_oos_sharpe: annualised Sharpe of GMV on test
+    - condition_number: spectral cond(Ω̂)
+    - credible_edge_count + credible_edges (Bayesian only)
+
+    Output schema is intentionally a strict subset of the synthetic schema
+    so the aggregator can pivot on ``real_data`` without special-casing.
+    """
+    omega_hat_path = results_dir / "omega_hat.npy"
+    if not omega_hat_path.exists():
+        metrics = _null_metrics(method, diagnostics)
+        metrics["status"] = "success_but_no_estimate"
+        metrics["real_data"] = True
+        _write_metrics(results_dir, metrics)
+        return metrics
+
+    Omega_hat = np.load(omega_hat_path)
+    Y_test_path = data_dir / "Y_test.npy"
+    if not Y_test_path.exists():
+        # Should not happen if build_real_data_splits.py ran cleanly.
+        metrics = _null_metrics(method, diagnostics)
+        metrics["status"] = "missing_Y_test"
+        metrics["real_data"] = True
+        _write_metrics(results_dir, metrics)
+        return metrics
+    Y_test = np.load(Y_test_path)
+
+    # Bayesian methods produce posterior samples; load if present.
+    omega_samples = None
+    if samples_exist(results_dir, "omega_samples"):
+        omega_samples = load_samples(results_dir, "omega_samples").astype(np.float64)
+
+    holdout = compute_holdout_metrics(Omega_hat, Y_test, omega_samples=omega_samples)
+
+    metrics: dict = {
+        "method": method,
+        "config_id": int(diagnostics.get("config_id", -1)),
+        "seed": int(diagnostics.get("seed", 0)),
+        "p": int(data_metadata.get("p", Omega_hat.shape[0])),
+        "T": int(data_metadata.get("T", 0)),
+        "T_test": int(data_metadata.get("T_test", Y_test.shape[0])),
+        "graph": data_metadata.get("graph", "ff48"),
+        "sparsity": data_metadata.get("sparsity"),
+        "gamma": data_metadata.get("gamma"),
+        "real_data": True,
+        "status": "success",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "window_id": data_metadata.get("window_id"),
+        # Holdout metrics
+        "oos_nll": holdout["oos_nll"],
+        "gmv_oos_variance": holdout["gmv_oos_variance"],
+        "gmv_oos_sharpe": holdout["gmv_oos_sharpe"],
+        "condition_number": holdout["condition_number"],
+    }
+    if "credible_edge_count" in holdout:
+        metrics["credible_edge_count"] = holdout["credible_edge_count"]
+        # ``credible_edges`` is a list of [i, j] pairs; can be large but it's
+        # what the edge-Jaccard-across-windows analysis needs.
+        metrics["credible_edges"] = holdout["credible_edges"]
+
+    _write_metrics(results_dir, metrics)
+    return metrics
